@@ -11,9 +11,6 @@ const pool = new pg.Pool({
 });
 
 export class DatabaseService {
-  /**
-   * Obtiene o crea la empresa emisora en PostgreSQL
-   */
   static async getOrCreateTenant(tenantData) {
     const client = await pool.connect();
     try {
@@ -83,9 +80,6 @@ export class DatabaseService {
     }
   }
 
-  /**
-   * Obtiene o crea el cliente/comprador final o paciente en PostgreSQL
-   */
   static async getOrCreateCustomer(idClientePuntito, customerData) {
     const client = await pool.connect();
     try {
@@ -110,9 +104,6 @@ export class DatabaseService {
     }
   }
 
-  /**
-   * Obtiene el siguiente secuencial autorumétrico usando la función PostgreSQL
-   */
   static async getNextSequential(idClientePuntito, idEstablecimiento, codDoc = '01') {
     const res = await pool.query(
       'SELECT facturacion.get_next_sequential($1, $2, $3) AS secuencial',
@@ -121,9 +112,6 @@ export class DatabaseService {
     return res.rows[0].secuencial;
   }
 
-  /**
-   * Guarda una transacción completa en PostgreSQL (Factura SRI + Detalle + Asiento Contable NIIF)
-   */
   static async saveInvoiceTransaction({ tenantIds, customerId, codDoc = '01', secuencialStr, totals, items, sriResponse, journalEntry }) {
     const client = await pool.connect();
     try {
@@ -154,11 +142,15 @@ export class DatabaseService {
       const idDocumento = insDoc.rows[0].id_documento;
 
       for (const item of items) {
+        // Garantizar que la descripción nunca sea NULL/undefined soportando 'descripcion' y 'nombre'
+        const descripcionTxt = item.descripcion || item.nombre || 'Producto / Servicio General';
+        const codigoTxt = item.codigo || item.codigoPrincipal || item.sku || 'PROD';
+
         await client.query(
           `INSERT INTO facturacion.tbt_documento_detalle (
             id_documento, codigo_principal, descripcion, cantidad, precio_unitario, descuento, precio_total_sin_imp
           ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [idDocumento, item.codigo || 'PROD', item.descripcion, item.cantidad, item.precioUnitario, item.valorDescuento || 0, item.subtotalNeto]
+          [idDocumento, codigoTxt, descripcionTxt, item.cantidad, item.precioUnitario, item.valorDescuento || 0, item.subtotalNeto]
         );
       }
 
@@ -204,9 +196,6 @@ export class DatabaseService {
     }
   }
 
-  /**
-   * Obtiene una factura por su clave de acceso
-   */
   static async getInvoiceByClave(claveAcceso) {
     const resDoc = await pool.query(
       `SELECT d.*, c.razon_social as comprador_nombre, c.identificacion as comprador_id, c.email as comprador_email
@@ -226,9 +215,6 @@ export class DatabaseService {
     return { ...doc, detalles: resDetalles.rows };
   }
 
-  /**
-   * Obtiene la lista de facturas emitidas registradas en PostgreSQL
-   */
   static async getInvoices(idClientePuntito = 1) {
     const res = await pool.query(
       `SELECT d.id_documento, d.secuencial, d.clave_acceso, d.estado, d.fecha_emision, d.importe_total,
@@ -240,9 +226,6 @@ export class DatabaseService {
     return res.rows;
   }
 
-  /**
-   * Obtiene el Libro Diario registrado en PostgreSQL
-   */
   static async getJournalEntries(idClientePuntito = 1) {
     const resAsientos = await pool.query(
       `SELECT a.id_asiento, a.numero_asiento, a.fecha, a.concepto, a.total_debe, a.total_haber, a.is_balanced, d.secuencial as invoice_ref

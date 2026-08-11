@@ -66,11 +66,16 @@ body {
 }
 
 .logo-icon {
-  font-size: 2.4rem;
-  background: white;
-  padding: 10px;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: var(--gradient-main);
+  color: white;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -117,15 +122,15 @@ h1 {
   background: white;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 12px 20px;
+  padding: 10px 18px;
   border-radius: 12px;
   font-family: var(--font-main);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
 }
@@ -142,6 +147,30 @@ h1 {
   border-color: transparent;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
+
+.tab-btn.active .tab-badge {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
+/* Tab Badges */
+.tab-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.bg-blue { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.bg-emerald { background: #ecfdf5; color: #059669; border-color: #a7f3d0; }
+.bg-cyan { background: #f0f9ff; color: #0284c7; border-color: #bae6fd; }
+.bg-purple { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+.bg-slate { background: #f8fafc; color: #475569; border-color: #cbd5e1; }
+.bg-amber { background: #fffbeb; color: #d97706; border-color: #fde68a; }
 
 /* Light Cards */
 .card {
@@ -267,10 +296,6 @@ h1 {
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
 }
 
-.mod-icon {
-  font-size: 1.5rem;
-}
-
 .mod-info strong {
   display: block;
   font-size: 0.9rem;
@@ -322,7 +347,6 @@ h1 {
   border-color: var(--border-accent);
 }
 
-/* Tabs Content Visibility */
 .tab-content {
   display: none;
 }
@@ -335,16 +359,10 @@ h1 {
   display: none !important;
 }
 
-/* Output Container & Empty State */
 .output-empty {
   text-align: center;
   padding: 40px 20px;
   color: var(--text-secondary);
-}
-
-.empty-state-illustration {
-  font-size: 3rem;
-  margin-bottom: 12px;
 }
 
 .flow-steps {
@@ -360,7 +378,6 @@ h1 {
   margin-bottom: 8px;
 }
 
-/* Summary Box */
 .summary-box {
   background: #f8fafc;
   border: 1px solid var(--border-color);
@@ -401,7 +418,6 @@ h1 {
   gap: 10px;
 }
 
-/* Code Inspector */
 .code-viewer-container {
   background: #0f172a;
   border-radius: 12px;
@@ -441,7 +457,6 @@ code {
   color: #38bdf8;
 }
 
-/* Accounting Ledger Cards */
 .journal-card {
   background: #ffffff;
   border: 1px solid var(--border-color);
@@ -489,7 +504,6 @@ code {
   font-weight: 600;
 }
 
-/* Tables */
 .table-responsive {
   overflow-x: auto;
 }
@@ -512,7 +526,6 @@ code {
   font-weight: 600;
 }
 
-/* Guide Grid */
 .guide-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

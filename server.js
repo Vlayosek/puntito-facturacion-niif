@@ -9,9 +9,6 @@ dotenv.config();
 import { TaxEngine, SRI_REGIMES } from './src/core/tax/TaxEngine.js';
 import { AutorizadorEcProvider } from './src/core/sri/AutorizadorEcProvider.js';
 import { AccountingEngine } from './src/core/accounting/AccountingEngine.js';
-import { MedicalClinicAdapter } from './src/adapters/MedicalClinicAdapter.js';
-import { RetailStoreAdapter } from './src/adapters/RetailStoreAdapter.js';
-import { DentistAppointmentAdapter } from './src/adapters/DentistAppointmentAdapter.js';
 import { DEFAULT_CHART_OF_ACCOUNTS } from './src/core/accounting/defaultChartOfAccounts.js';
 import { DatabaseService } from './src/core/db/DatabaseService.js';
 
@@ -24,7 +21,6 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Endpoint: Obtener Configuración Actual y API Key
 app.get('/api/config', (req, res) => {
   res.json({
     success: true,
@@ -34,7 +30,6 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-// API Endpoint: Guardar/Actualizar API Key en .env
 app.post('/api/config/api-key', (req, res) => {
   try {
     const { apiKey, environment } = req.body;
@@ -59,12 +54,10 @@ app.post('/api/config/api-key', (req, res) => {
   }
 });
 
-// API Endpoint: Obtener Plan de Cuentas NIIF
 app.get('/api/accounting/chart-of-accounts', (req, res) => {
   res.json({ success: true, data: DEFAULT_CHART_OF_ACCOUNTS });
 });
 
-// API Endpoint: Obtener Libro Diario Registrado en PostgreSQL
 app.get('/api/accounting/ledger', async (req, res) => {
   try {
     const entries = await DatabaseService.getJournalEntries(1);
@@ -74,7 +67,6 @@ app.get('/api/accounting/ledger', async (req, res) => {
   }
 });
 
-// API Endpoint: Obtener Lista de Facturas Guardadas en PostgreSQL
 app.get('/api/invoices', async (req, res) => {
   try {
     const invoices = await DatabaseService.getInvoices(1);
@@ -84,7 +76,6 @@ app.get('/api/invoices', async (req, res) => {
   }
 });
 
-// API Endpoint: Obtener Factura Específica por Clave de Acceso (para RIDE PDF)
 app.get('/api/invoices/:claveAcceso', async (req, res) => {
   try {
     const invoice = await DatabaseService.getInvoiceByClave(req.params.claveAcceso);
@@ -98,8 +89,7 @@ app.get('/api/invoices/:claveAcceso', async (req, res) => {
 });
 
 // ==============================================================================
-// ENDPOINT UNIVERSAL DE FACTURACIÓN SRI + NIIF PARA CUALQUIER SISTEMA EXTERNO
-// (Turnos Dentales, Veterinarias, POS, E-commerce, Laravel, React, Mobile)
+// ENDPOINT UNIVERSAL DE FACTURACIÓN SRI + NIIF
 // ==============================================================================
 app.post('/api/v1/invoices/emit', async (req, res) => {
   try {
@@ -130,7 +120,16 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
     const secuencialStr = await DatabaseService.getNextSequential(tenantIds.idCliente, tenantIds.idEstablecimiento, '01');
     const invoiceNumber = `${emisorTenant.establecimiento}-${emisorTenant.puntoEmision}-${secuencialStr}`;
 
-    const totals = TaxEngine.calculateTotals(items, emisorTenant.regimenSRI);
+    const normalizedItems = (items || []).map(item => ({
+      codigo: item.codigo || item.codigoPrincipal || item.sku || 'PROD',
+      descripcion: item.descripcion || item.nombre || 'Producto / Servicio General',
+      cantidad: Number(item.cantidad) || 1,
+      precioUnitario: Number(item.precioUnitario) || 0,
+      porcentajeDescuento: Number(item.descuento || item.porcentajeDescuento) || 0,
+      aplicaIva15: item.aplicaIva15 !== undefined ? Boolean(item.aplicaIva15) : true
+    }));
+
+    const totals = TaxEngine.calculateTotals(normalizedItems, emisorTenant.regimenSRI);
 
     const sriProvider = new AutorizadorEcProvider(activeApiKey, process.env.AUTORIZADOR_EC_ENV || 'TEST');
     const payloadSRI = sriProvider.buildPayload(
@@ -162,13 +161,23 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
       journalEntry
     });
 
+    const responsePayload = {
+      module: 'SaaS_Universal',
+      invoiceNumber,
+      customer: {
+        tipoIdentificacionSRI: tipoId.code,
+        identificacion: comprador.identificacion,
+        razonSocial: comprador.nombre || comprador.razonSocial
+      },
+      totals,
+      sriResponse,
+      journalEntry
+    };
+
     res.json({
       success: true,
       idDocumento,
-      invoiceNumber,
-      claveAcceso: sriResponse.data?.claveAcceso,
-      rideUrl: `/ride-viewer.html?clave=${sriResponse.data?.claveAcceso}`,
-      journalEntry
+      result: responsePayload
     });
   } catch (error) {
     console.error('Error en Endpoint Universal de Facturación:', error);
@@ -176,7 +185,6 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
   }
 });
 
-// API Endpoints legacy para los módulos de simulación
 app.post('/api/modules/medical/emit-invoice', async (req, res) => {
   req.url = '/api/v1/invoices/emit';
   req.body = {
