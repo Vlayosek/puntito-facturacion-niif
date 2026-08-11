@@ -1,17 +1,62 @@
 /**
- * Lógica Frontend del Dashboard Interactivo SaaS Facturación SRI + NIIF
+ * Lógica Frontend del Dashboard Interactivo Puntito SaaS SRI + NIIF + PostgreSQL
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initModuleSwitch();
   initForms();
+  initApiKeyConfig();
   loadChartOfAccounts();
+  loadConfigStatus();
 });
 
 let lastOperationResult = null;
 
-// Manejo de Pestañas (Tabs)
+function initApiKeyConfig() {
+  const btnSave = document.getElementById('btnSaveApiKey');
+  const inputKey = document.getElementById('inputApiKey');
+
+  btnSave?.addEventListener('click', async () => {
+    const apiKey = inputKey.value.trim();
+    if (!apiKey) {
+      alert('Por favor ingresa una API Key válida de AutorizadorEC.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/config/api-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('API Key de AutorizadorEC guardada exitosamente en .env');
+        loadConfigStatus();
+      } else {
+        alert('Error guardando API Key: ' + data.error);
+      }
+    } catch (err) {
+      alert('Error de conexión: ' + err.message);
+    }
+  });
+}
+
+async function loadConfigStatus() {
+  try {
+    const res = await fetch('/api/config');
+    const data = await res.json();
+    const dbBadge = document.getElementById('dbStatusBadge');
+    if (dbBadge) {
+      dbBadge.innerText = `PostgreSQL: ${data.database} (${data.apiKeyConfigured ? 'API Key Real' : 'API Key Demo'})`;
+      dbBadge.className = data.apiKeyConfigured ? 'badge badge-api' : 'badge badge-sri';
+    }
+  } catch (err) {
+    console.error('Error cargando estado:', err);
+  }
+}
+
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
@@ -29,12 +74,15 @@ function initTabs() {
 
       if (targetTab === 'ledger') {
         fetchLedger();
+      } else if (targetTab === 'db-invoices') {
+        fetchDbInvoices();
       }
     });
   });
+
+  document.getElementById('btnRefreshInvoices')?.addEventListener('click', fetchDbInvoices);
 }
 
-// Selector de Módulo (Médico vs Retail POS)
 function initModuleSwitch() {
   const btnMedical = document.getElementById('btnModMedical');
   const btnRetail = document.getElementById('btnModRetail');
@@ -56,7 +104,6 @@ function initModuleSwitch() {
   });
 }
 
-// Inicializar Formularios
 function initForms() {
   const formMedical = document.getElementById('formMedical');
   const formRetail = document.getElementById('formRetail');
@@ -82,7 +129,7 @@ function initForms() {
   document.getElementById('btnCopyJson')?.addEventListener('click', () => {
     const code = document.getElementById('jsonInspectorCode').innerText;
     navigator.clipboard.writeText(code);
-    alert('JSON de AutorizadorEC copiado al portapapeles!');
+    alert('JSON de AutorizadorEC copiado al portapapeles.');
   });
 }
 
@@ -91,7 +138,6 @@ function switchToTab(tabName) {
   if (btn) btn.click();
 }
 
-// Emisión Módulo Médico
 async function emitMedicalInvoice() {
   const regimen = document.getElementById('tenantRegimen').value;
   const patientName = document.getElementById('medPatientName').value;
@@ -99,8 +145,10 @@ async function emitMedicalInvoice() {
   const specialty = document.getElementById('medSpecialty').value;
   const fee = parseFloat(document.getElementById('medFee').value) || 50;
   const paymentMethod = document.getElementById('medPaymentMethod').value;
+  const apiKey = document.getElementById('inputApiKey')?.value.trim();
 
   const payload = {
+    apiKey,
     tenantConfig: {
       ruc: '1792123456001',
       razonSocial: 'CONSULTORIO MEDICO DR. PEREZ C.LTDA.',
@@ -126,14 +174,15 @@ async function emitMedicalInvoice() {
   await sendInvoiceRequest('/api/modules/medical/emit-invoice', payload);
 }
 
-// Emisión Módulo Retail POS
 async function emitRetailInvoice() {
   const regimen = document.getElementById('tenantRegimen').value;
   const customerName = document.getElementById('retailCustomerName').value;
   const customerId = document.getElementById('retailCustomerId').value;
   const paymentMethod = document.getElementById('retailPaymentMethod').value;
+  const apiKey = document.getElementById('inputApiKey')?.value.trim();
 
   const payload = {
+    apiKey,
     tenantConfig: {
       ruc: '0992876543001',
       razonSocial: 'COMERCIAL EL SOL S.A.S.',
@@ -159,11 +208,10 @@ async function emitRetailInvoice() {
   await sendInvoiceRequest('/api/modules/retail/emit-invoice', payload);
 }
 
-// Envío a Servidor Backend
 async function sendInvoiceRequest(url, payload) {
   const statusBadge = document.getElementById('statusBadge');
   statusBadge.className = 'status-pill status-sending';
-  statusBadge.innerText = 'Comunicando con AutorizadorEC...';
+  statusBadge.innerText = 'Comunicando con AutorizadorEC & PostgreSQL...';
 
   try {
     const res = await fetch(url, {
@@ -175,36 +223,74 @@ async function sendInvoiceRequest(url, payload) {
     const data = await res.json();
     if (data.success) {
       lastOperationResult = data.result;
-      renderResult(data.result);
+      renderResult(data.result, data.idDocumento);
     } else {
       alert('Error en la emisión: ' + data.error);
+      statusBadge.className = 'status-pill status-idle';
+      statusBadge.innerText = 'Error en emisión';
     }
   } catch (err) {
     alert('Error al conectar con el servidor: ' + err.message);
+    statusBadge.className = 'status-pill status-idle';
+    statusBadge.innerText = 'Error de conexión';
   }
 }
 
-// Renderizar Resultado en Pantalla
-function renderResult(result) {
+function renderResult(result, idDocumento) {
   const statusBadge = document.getElementById('statusBadge');
   statusBadge.className = 'status-pill status-success';
-  statusBadge.innerText = 'Factura SRI Autorizada';
+  statusBadge.innerText = 'Factura SRI Autorizada & Guardada en DB';
 
   document.getElementById('outputContainer').classList.add('hidden');
   document.getElementById('outputResult').classList.remove('hidden');
 
   document.getElementById('resInvoiceNum').innerText = result.invoiceNumber;
-  document.getElementById('resAccessKey').innerText = result.sriResponse.data.claveAcceso;
+  document.getElementById('resAccessKey').innerText = result.sriResponse.data?.claveAcceso || 'AUTORIZADO';
   document.getElementById('resTotal').innerText = `$${result.totals.importeTotal.toFixed(2)}`;
+  document.getElementById('resDbDocId').innerText = idDocumento ? `ID #${idDocumento}` : 'Guardado en PostgreSQL';
 
-  // Actualizar Inspector JSON AutorizadorEC
   const jsonInspector = document.getElementById('jsonInspectorCode');
   if (jsonInspector) {
-    jsonInspector.innerText = JSON.stringify(result.sriResponse.data.payloadEnviado, null, 2);
+    jsonInspector.innerText = JSON.stringify(result.sriResponse.data?.payloadEnviado || result.sriResponse, null, 2);
   }
 }
 
-// Obtener y renderizar el Libro Diario (NIIF)
+async function fetchDbInvoices() {
+  const tbody = document.getElementById('dbInvoicesTable');
+  if (!tbody) return;
+
+  try {
+    const res = await fetch('/api/invoices');
+    const data = await res.json();
+
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No hay facturas registradas en PostgreSQL aún. Emite una desde la primera pestaña.</td></tr>`;
+      return;
+    }
+
+    let html = '';
+    data.data.forEach(inv => {
+      const fecha = new Date(inv.fecha_emision).toLocaleDateString('es-EC');
+      const localRideUrl = `/ride-viewer.html?clave=${inv.clave_acceso}`;
+
+      html += `
+        <tr>
+          <td><code>${inv.secuencial}</code></td>
+          <td><strong>${inv.comprador_nombre || 'CONSUMIDOR FINAL'}</strong><br><small class="text-muted">${inv.comprador_id || ''}</small></td>
+          <td>${fecha}</td>
+          <td><strong>$${Number(inv.importe_total).toFixed(2)}</strong></td>
+          <td><span class="tag tag-success">${inv.estado}</span></td>
+          <td><code class="code-sm">${inv.clave_acceso}</code></td>
+          <td><a href="${localRideUrl}" target="_blank" class="btn btn-outline" style="padding: 4px 8px; font-size: 0.75rem;">Ver RIDE PDF</a></td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="color: red">Error cargando facturas: ${err.message}</td></tr>`;
+  }
+}
+
 async function fetchLedger() {
   const container = document.getElementById('ledgerContainer');
   try {
@@ -212,7 +298,7 @@ async function fetchLedger() {
     const data = await res.json();
 
     if (!data.data || data.data.length === 0) {
-      container.innerHTML = `<p class="text-muted">No hay asientos contables registrados. Realiza emisiones en el Simulador.</p>`;
+      container.innerHTML = `<p class="text-muted">No hay asientos contables registrados en PostgreSQL aún. Realiza emisiones en el Simulador.</p>`;
       return;
     }
 
@@ -249,8 +335,8 @@ async function fetchLedger() {
             <tfoot>
               <tr class="journal-footer">
                 <td colspan="2">TOTALES:</td>
-                <td class="num" style="color: var(--accent-cyan)">$${entry.totalDebit.toFixed(2)}</td>
-                <td class="num" style="color: var(--accent-cyan)">$${entry.totalCredit.toFixed(2)}</td>
+                <td class="num" style="color: var(--accent-blue)">$${entry.totalDebit.toFixed(2)}</td>
+                <td class="num" style="color: var(--accent-blue)">$${entry.totalCredit.toFixed(2)}</td>
               </tr>
             </tfoot>
           </table>
@@ -264,7 +350,6 @@ async function fetchLedger() {
   }
 }
 
-// Cargar Plan de Cuentas NIIF
 async function loadChartOfAccounts() {
   const tbody = document.getElementById('chartOfAccountsTable');
   if (!tbody) return;
@@ -282,7 +367,7 @@ async function loadChartOfAccounts() {
           <td>${indent}${acc.level === 1 ? '<strong>' + acc.name + '</strong>' : acc.name}</td>
           <td><span class="badge">${acc.type}</span></td>
           <td>Nivel ${acc.level}</td>
-          <td>${acc.isSelectable ? '✅ Imputable' : '📁 Agrupadora'}</td>
+          <td>${acc.isSelectable ? 'Imputable' : 'Agrupadora'}</td>
         </tr>
       `;
     });

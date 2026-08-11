@@ -5,7 +5,7 @@
  * (AutorizadorEC) y Asientos Contables NIIF automáticos.
  */
 
-import { TaxEngine, SRI_REGIMES } from '../core/tax/TaxEngine.js';
+import { TaxEngine } from '../core/tax/TaxEngine.js';
 import { AutorizadorEcProvider } from '../core/sri/AutorizadorEcProvider.js';
 import { AccountingEngine } from '../core/accounting/AccountingEngine.js';
 
@@ -21,7 +21,6 @@ export class RetailStoreAdapter {
    * Procesa una venta en punto de venta (POS)
    */
   async processPosSale({ customerData, cartItems, paymentMethod = 'EFECTIVO' }) {
-    // 1. Identificación SRI del comprador
     const tipoIdSRI = TaxEngine.getSRITypeIdentification(customerData?.identificacion);
     const customerSRI = {
       tipoIdentificacionSRI: tipoIdSRI.code,
@@ -31,7 +30,6 @@ export class RetailStoreAdapter {
       email: customerData?.email || 'cliente@ejemplo.com'
     };
 
-    // 2. Mapear ítems del carrito
     const items = cartItems.map(item => ({
       codigo: item.sku || 'PROD-POS',
       descripcion: item.nombre,
@@ -41,18 +39,13 @@ export class RetailStoreAdapter {
       aplicaIva15: item.aplicaIva15 !== undefined ? item.aplicaIva15 : true
     }));
 
-    // 3. Calcular Impuestos SRI según Régimen Emisor
     const totals = TaxEngine.calculateTotals(items, this.tenant.regimenSRI);
-
-    // 4. Formatear Secuencial SRI
     const secuencialStr = String(this.secuencialCounter++).padStart(9, '0');
     const invoiceNumber = `${this.tenant.establecimiento}-${this.tenant.puntoEmision}-${secuencialStr}`;
 
-    // 5. Construir Payload y enviar a AutorizadorEC API
     const payload = this.sriProvider.buildPayload(this.tenant, customerSRI, totals, items, secuencialStr);
     const sriResponse = await this.sriProvider.sendInvoice(payload);
 
-    // 6. Generar Asiento Contable Automático NIIF
     const journalEntry = this.accountingEngine.generateJournalEntryFromInvoice({
       invoiceNumber,
       date: new Date().toISOString().substring(0, 10),

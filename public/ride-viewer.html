@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIDE - Representación Impresa de Comprobante Electrónico (SRI)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Libre+Barcode+128&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #0f172a;
+      --border-dark: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Roboto', sans-serif; background: #e2e8f0; padding: 20px; color: #000; }
+    .print-actions { max-width: 800px; margin: 0 auto 16px auto; display: flex; justify-content: space-between; }
+    .btn-print { background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn-print:hover { background: #1d4ed8; }
+    
+    .ride-container { max-width: 800px; margin: 0 auto; background: white; padding: 24px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .grid-header { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .box-border { border: 1px solid #000; border-radius: 8px; padding: 12px; font-size: 0.8rem; }
+    
+    .emisor-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 6px; }
+    .emisor-info { font-size: 0.8rem; line-height: 1.4; }
+    
+    .sri-box { font-size: 0.8rem; line-height: 1.5; }
+    .sri-box strong { font-size: 0.9rem; }
+    .barcode { font-family: 'Libre Barcode 128', cursive; font-size: 2.2rem; text-align: center; margin: 6px 0; word-break: break-all; }
+    .clave-text { font-family: monospace; font-size: 0.75rem; text-align: center; word-break: break-all; }
+
+    .buyer-box { border: 1px solid #000; border-radius: 8px; padding: 10px; font-size: 0.8rem; margin-bottom: 16px; line-height: 1.5; }
+    
+    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 0.8rem; }
+    .details-table th, .details-table td { border: 1px solid #000; padding: 6px 8px; text-align: left; }
+    .details-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.75rem; }
+    .num { text-align: right !important; }
+
+    .grid-footer { display: grid; grid-template-columns: 1fr 260px; gap: 16px; }
+    .totals-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .totals-table td { border: 1px solid #000; padding: 4px 8px; }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .print-actions { display: none; }
+      .ride-container { border: none; box-shadow: none; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="print-actions">
+    <button class="btn-print" onclick="window.print()">Imprimir / Descargar PDF (RIDE)</button>
+    <button class="btn-print" style="background: #64748b;" onclick="window.close()">Cerrar</button>
+  </div>
+
+  <div class="ride-container">
+    <!-- Header SRI -->
+    <div class="grid-header">
+      <!-- Emisor -->
+      <div class="box-border">
+        <div class="emisor-title" id="rEmisorRazon">CONSULTORIO MEDICO DR. PEREZ C.LTDA.</div>
+        <div class="emisor-info">
+          <p><strong>Nombre Comercial:</strong> <span id="rEmisorNombreCom">Centro Médico Especializado</span></p>
+          <p><strong>Matriz:</strong> <span id="rEmisorMatriz">Av. Amazonas N24-15 y Colón, Quito</span></p>
+          <p><strong>Establecimiento:</strong> <span id="rEmisorEstab">001-002</span></p>
+          <p><strong>Obligado a Llevar Contabilidad:</strong> <span id="rEmisorContabilidad">SI</span></p>
+          <p id="rEmisorRegimenContainer"><strong>Régimen:</strong> <span id="rEmisorRegimen">Régimen General</span></p>
+        </div>
+      </div>
+
+      <!-- SRI Info Box -->
+      <div class="box-border sri-box">
+        <p><strong>R.U.C.:</strong> <span id="rEmisorRuc">1792123456001</span></p>
+        <p style="font-size: 1.1rem; color: #1e3a8a; font-weight: bold; margin: 4px 0;">FACTURA</p>
+        <p><strong>No.:</strong> <span id="rSecuencial">001-002-000000001</span></p>
+        <p><strong>NÚMERO DE AUTORIZACIÓN:</strong></p>
+        <p class="clave-text" id="rClaveAutorizacion">1108202601179212345600110010020000000011234567817</p>
+        <p><strong>FECHA Y HORA DE AUTORIZACIÓN:</strong> <span id="rFechaAutorizacion">11/08/2026 02:44</span></p>
+        <p><strong>AMBIENTE:</strong> PRUEBAS</p>
+        <p><strong>EMISIÓN:</strong> NORMAL</p>
+        <p style="margin-top: 6px;"><strong>CLAVE DE ACCESO:</strong></p>
+        <div class="barcode" id="rBarcode">1108202601179212345600110010020000000011234567817</div>
+        <p class="clave-text" id="rClaveAccesoText">1108202601179212345600110010020000000011234567817</p>
+      </div>
+    </div>
+
+    <!-- Comprador Box -->
+    <div class="buyer-box">
+      <p><strong>Razón Social / Nombres y Apellidos:</strong> <span id="rClienteNombre">Dra. María Elena Torres</span></p>
+      <p><strong>Identificación:</strong> <span id="rClienteId">1712345678</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Fecha Emisión:</strong> <span id="rFechaEmision">11/08/2026</span></p>
+      <p><strong>Dirección:</strong> <span id="rClienteDir">Quito - Sector La Carolina</span></p>
+    </div>
+
+    <!-- Detalle Tabla -->
+    <table class="details-table">
+      <thead>
+        <tr>
+          <th>Cod. Principal</th>
+          <th>Cant.</th>
+          <th>Descripción</th>
+          <th class="num">Precio Unit.</th>
+          <th class="num">Descuento</th>
+          <th class="num">Precio Total</th>
+        </tr>
+      </thead>
+      <tbody id="rDetailsBody">
+        <tr>
+          <td>MED-001</td>
+          <td>1.00</td>
+          <td>Consulta Médica Pediatría</td>
+          <td class="num">$50.00</td>
+          <td class="num">$0.00</td>
+          <td class="num">$50.00</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer: Info Adicional & Totales -->
+    <div class="grid-footer">
+      <div class="box-border">
+        <strong>Información Adicional</strong>
+        <div id="rInfoAdicional" style="margin-top: 6px; font-size: 0.8rem; line-height: 1.4;">
+          <p><strong>Email:</strong> paciente@ejemplo.ec</p>
+          <p><strong>Leyenda SRI:</strong> Contribuyente Régimen General</p>
+          <p><strong>Generado por:</strong> Puntito SaaS Facturación NIIF</p>
+        </div>
+      </div>
+
+      <div>
+        <table class="totals-table">
+          <tr><td>SUBTOTAL 15%</td><td class="num" id="rSubtotal15">$0.00</td></tr>
+          <tr><td>SUBTOTAL 0%</td><td class="num" id="rSubtotal0">$50.00</td></tr>
+          <tr><td>SUBTOTAL NO OBJETO IVA</td><td class="num">$0.00</td></tr>
+          <tr><td>SUBTOTAL EXENTO IVA</td><td class="num">$0.00</td></tr>
+          <tr><td>SUBTOTAL SIN IMPUESTOS</td><td class="num" id="rSubtotalSinImp">$50.00</td></tr>
+          <tr><td>TOTAL DESCUENTO</td><td class="num" id="rTotalDescuento">$0.00</td></tr>
+          <tr><td>IVA 15%</td><td class="num" id="rTotalIva">$0.00</td></tr>
+          <tr><td><strong>VALOR TOTAL</strong></td><td class="num"><strong id="rImporteTotal">$50.00</strong></td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const clave = urlParams.get('clave');
+      if (!clave) return;
+
+      try {
+        const res = await fetch(`/api/invoices/${clave}`);
+        const data = await res.json();
+        if (data.success && data.invoice) {
+          const inv = data.invoice;
+          document.getElementById('rSecuencial').innerText = inv.secuencial;
+          document.getElementById('rClaveAutorizacion').innerText = inv.clave_acceso;
+          document.getElementById('rBarcode').innerText = inv.clave_acceso;
+          document.getElementById('rClaveAccesoText').innerText = inv.clave_acceso;
+          document.getElementById('rClienteNombre').innerText = inv.comprador_nombre || 'CONSUMIDOR FINAL';
+          document.getElementById('rClienteId').innerText = inv.comprador_id || '9999999999999';
+          document.getElementById('rImporteTotal').innerText = `$${Number(inv.importe_total).toFixed(2)}`;
+          document.getElementById('rSubtotalSinImp').innerText = `$${Number(inv.total_sin_impuestos || inv.importe_total).toFixed(2)}`;
+          document.getElementById('rTotalIva').innerText = `$${Number(inv.total_iva || 0).toFixed(2)}`;
+
+          if (inv.detalles && inv.detalles.length > 0) {
+            let html = '';
+            inv.detalles.forEach(d => {
+              html += `
+                <tr>
+                  <td>${d.codigo_principal || 'PROD'}</td>
+                  <td>${Number(d.cantidad).toFixed(2)}</td>
+                  <td>${d.descripcion}</td>
+                  <td class="num">$${Number(d.precio_unitario).toFixed(2)}</td>
+                  <td class="num">$${Number(d.descuento || 0).toFixed(2)}</td>
+                  <td class="num">$${Number(d.precio_total_sin_imp).toFixed(2)}</td>
+                </tr>
+              `;
+            });
+            document.getElementById('rDetailsBody').innerHTML = html;
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando RIDE:', err);
+      }
+    });
+  </script>
+</body>
+</html>

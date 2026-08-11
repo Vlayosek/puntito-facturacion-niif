@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaaS Facturación Electrónica SRI (AutorizadorEC) + Contabilidad NIIF</title>
-  <!-- Google Fonts: Outfit -->
+  <title>Puntito SaaS - Facturación Electrónica SRI & Contabilidad NIIF</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,56 +14,73 @@
     <!-- Header -->
     <header class="main-header">
       <div class="brand">
-        <div class="logo-icon">🇪🇨</div>
+        <div class="logo-icon">P</div>
         <div>
-          <h1>Facturación SRI & Core Contable NIIF</h1>
-          <p class="subtitle">Arquitectura SaaS Desacoplada | Middleware <strong>AutorizadorEC API</strong></p>
+          <h1>Puntito Core SaaS</h1>
+          <p class="subtitle">Facturación Electrónica SRI (AutorizadorEC API) & Core Contable NIIF</p>
         </div>
       </div>
       <div class="header-badges">
         <span class="badge badge-sri">SRI IVA 15% / 0%</span>
-        <span class="badge badge-api">AutorizadorEC Sandbox</span>
+        <span class="badge badge-api" id="dbStatusBadge">PostgreSQL: puntitodb</span>
         <span class="badge badge-niif">NIIF para PYMES</span>
       </div>
     </header>
 
+    <!-- Global API Key Config Banner -->
+    <div class="card glass" style="margin-bottom: 20px; padding: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <div>
+          <strong style="font-size: 0.9rem;">Configuración de API Key (AutorizadorEC)</strong>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Pega la clave generada en panel.autorizadorec.com/client/settings (Se guardará en <code>.env</code>)</p>
+        </div>
+        <div style="display: flex; gap: 10px; flex: 1; max-width: 500px;">
+          <input type="password" id="inputApiKey" placeholder="Pega tu API Key de AutorizadorEC aquí" class="input-text" style="flex: 1;">
+          <button id="btnSaveApiKey" class="btn btn-outline" style="white-space: nowrap;">Guardar Clave</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Navigation Tabs -->
     <nav class="nav-tabs">
       <button class="tab-btn active" data-tab="simulator">
-        <span class="tab-icon">⚡</span> Simulador Operativo
+        <span class="tab-icon">[+]</span> Emisión Operativa
+      </button>
+      <button class="tab-btn" data-tab="db-invoices">
+        <span class="tab-icon">[DB]</span> Facturas PostgreSQL
       </button>
       <button class="tab-btn" data-tab="sri-inspector">
-        <span class="tab-icon">📄</span> Inspector JSON AutorizadorEC
+        <span class="tab-icon">[JSON]</span> Inspector AutorizadorEC
       </button>
       <button class="tab-btn" data-tab="ledger">
-        <span class="tab-icon">📊</span> Libro Diario (NIIF)
+        <span class="tab-icon">[NIIF]</span> Libro Diario
       </button>
       <button class="tab-btn" data-tab="chart-accounts">
-        <span class="tab-icon">📚</span> Plan de Cuentas
+        <span class="tab-icon">[CUENTAS]</span> Plan de Cuentas NIIF
       </button>
       <button class="tab-btn" data-tab="sri-guide">
-        <span class="tab-icon">💡</span> Guía Tributaria SRI
+        <span class="tab-icon">[SRI]</span> Guía Tributaria SRI
       </button>
     </nav>
 
     <!-- Main Content Area -->
     <main class="content-area">
 
-      <!-- TAB 1: SIMULADOR OPERATIVO -->
+      <!-- TAB 1: EMISIÓN OPERATIVA -->
       <section id="tab-simulator" class="tab-content active">
         <div class="grid-2col">
 
           <!-- Left Column: Business Controls -->
           <div class="card glass">
             <div class="card-header">
-              <h2>1. Configuración del Cliente / Emisor</h2>
+              <h2>1. Configuración del Emisor</h2>
               <span class="tag">Empresa SaaS</span>
             </div>
             
             <div class="form-group">
-              <label for="tenantRegimen">Régimen Tributario SRI:</label>
+              <label for="tenantRegimen">Régimen Tributario SRI del Emisor:</label>
               <select id="tenantRegimen" class="input-select">
-                <option value="REGIMEN_GENERAL">Régimen General (Servicios Prof., Sociedades, etc.)</option>
+                <option value="REGIMEN_GENERAL">Régimen General (Servicios Prof., Sociedades, Médicos)</option>
                 <option value="RIMPE_EMPRENDEDOR">RIMPE Emprendedor (Ingresos $20k - $300k)</option>
                 <option value="RIMPE_POPULAR">RIMPE Negocio Popular (Ingresos ≤ $20k)</option>
               </select>
@@ -80,14 +96,12 @@
 
             <div class="module-selector">
               <button class="module-card-btn active" id="btnModMedical">
-                <span class="mod-icon">🩺</span>
                 <div class="mod-info">
-                  <strong>Consultorio Médico</strong>
-                  <span>Atención, Pacientes, Citas (IVA 0% Ley)</span>
+                  <strong>Consultorio / Odontología</strong>
+                  <span>Citas, Pacientes (IVA 0% Ley)</span>
                 </div>
               </button>
               <button class="module-card-btn" id="btnModRetail">
-                <span class="mod-icon">🛒</span>
                 <div class="mod-info">
                   <strong>Tienda POS / Comercio</strong>
                   <span>Ventas de Mercadería (IVA 15%)</span>
@@ -97,7 +111,7 @@
 
             <!-- Form: Medical Module -->
             <form id="formMedical" class="module-form">
-              <h3>Datos de la Consulta Médica</h3>
+              <h3>Datos de la Consulta / Cita Médica</h3>
               <div class="form-row">
                 <div class="form-group">
                   <label>Nombre del Paciente:</label>
@@ -127,7 +141,7 @@
                 </select>
               </div>
               <button type="submit" class="btn btn-primary btn-block">
-                <span>🚀 Process consultation & Emit Factura SRI</span>
+                Process & Emit Factura SRI (Save to PostgreSQL)
               </button>
             </form>
 
@@ -136,7 +150,7 @@
               <h3>Venta en Mostrador (POS)</h3>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Razon Social Comprador:</label>
+                  <label>Razón Social Comprador:</label>
                   <input type="text" id="retailCustomerName" value="INMOBILIARIA ANDINA CIA. LTDA." class="input-text">
                 </div>
                 <div class="form-group">
@@ -147,8 +161,8 @@
               <div class="cart-items-preview">
                 <h4>Productos en Carrito:</h4>
                 <ul>
-                  <li>📦 <strong>2x Monitor LED 24"</strong> - $120.00 c/u (IVA 15%)</li>
-                  <li>🛠️ <strong>1x Cable HDMI Alta Velocidad</strong> - $15.00 (IVA 15%)</li>
+                  <li><strong>2x Monitor LED 24"</strong> - $120.00 c/u (IVA 15%)</li>
+                  <li><strong>1x Cable HDMI Alta Velocidad</strong> - $15.00 (IVA 15%)</li>
                 </ul>
               </div>
               <div class="form-group">
@@ -160,7 +174,7 @@
                 </select>
               </div>
               <button type="submit" class="btn btn-primary btn-block">
-                <span>🚀 Process POS Sale & Emit Factura SRI</span>
+                Process POS Sale & Emit Factura SRI (Save to PostgreSQL)
               </button>
             </form>
 
@@ -169,23 +183,21 @@
           <!-- Right Column: Live Output & Event Log -->
           <div class="card glass">
             <div class="card-header">
-              <h2>Resultado de la Operación en Tiempo Real</h2>
+              <h2>Resultado de la Emisión SRI & PostgreSQL</h2>
               <span id="statusBadge" class="status-pill status-idle">Esperando emisión...</span>
             </div>
 
             <div id="outputContainer" class="output-empty">
-              <div class="empty-state-illustration">⚙️</div>
-              <p>Elige un módulo a la izquierda y presiona <strong>Emitir Factura SRI</strong> para observar el flujo completo:</p>
+              <p>Elige un módulo a la izquierda y presiona <strong>Emitir Factura SRI</strong> para procesar la transacción:</p>
               <ol class="flow-steps">
-                <li>1. Módulo Operativo emite evento de negocio.</li>
-                <li>2. TaxEngine calcula IVA 15% / 0% y verifica reglas SRI.</li>
-                <li>3. AutorizadorEcProvider firma y autoriza comprobante ante SRI.</li>
-                <li>4. AccountingEngine genera el Asiento Contable por Partida Doble.</li>
+                <li>1. Generación de Payload DTO JSON SRI.</li>
+                <li>2. Envío a API AutorizadorEC (Firma + SRI Web Service).</li>
+                <li>3. Obtención de Clave de Acceso (49 dígitos) y RIDE PDF.</li>
+                <li>4. Registro persistente en PostgreSQL (schemas <code>facturacion</code> y <code>contabilidad</code>).</li>
               </ol>
             </div>
 
             <div id="outputResult" class="output-result hidden">
-              <!-- Summary Card -->
               <div class="summary-box">
                 <div class="sum-row">
                   <span>Factura No:</span>
@@ -203,12 +215,15 @@
                   <span>Importe Total:</span>
                   <strong id="resTotal" class="text-vibrant">$0.00</strong>
                 </div>
+                <div class="sum-row" style="margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+                  <span>PostgreSQL ID Documento:</span>
+                  <code id="resDbDocId" class="code-sm">-</code>
+                </div>
               </div>
 
-              <!-- Quick Links -->
               <div class="quick-actions">
-                <button id="btnViewSriJson" class="btn btn-outline">🔍 Ver JSON AutorizadorEC</button>
-                <button id="btnViewJournalEntry" class="btn btn-outline">📊 Ver Asiento Contable</button>
+                <button id="btnViewSriJson" class="btn btn-outline">Ver JSON AutorizadorEC</button>
+                <button id="btnViewJournalEntry" class="btn btn-outline">Ver Asiento Contable</button>
               </div>
             </div>
 
@@ -217,7 +232,35 @@
         </div>
       </section>
 
-      <!-- TAB 2: INSPECTOR JSON AUTORIZADOREC -->
+      <!-- TAB 2: FACTURAS EN POSTGRESQL -->
+      <section id="tab-db-invoices" class="tab-content">
+        <div class="card glass">
+          <div class="card-header">
+            <h2>Facturas Emitidas Guardadas en PostgreSQL (<code>facturacion.tbt_documento</code>)</h2>
+            <button id="btnRefreshInvoices" class="btn btn-outline">Recargar Lista</button>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Secuencial</th>
+                  <th>Comprador / Paciente</th>
+                  <th>Fecha</th>
+                  <th>Total ($)</th>
+                  <th>Estado SRI</th>
+                  <th>Clave de Acceso</th>
+                  <th>Comprobante PDF</th>
+                </tr>
+              </thead>
+              <tbody id="dbInvoicesTable">
+                <tr><td colspan="7" class="text-muted">Cargando facturas desde PostgreSQL...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: INSPECTOR JSON AUTORIZADOREC -->
       <section id="tab-sri-inspector" class="tab-content">
         <div class="card glass">
           <div class="card-header">
@@ -226,34 +269,33 @@
           </div>
           <div class="code-viewer-container">
             <div class="code-header">
-              <span>POST https://sandbox.autorizadorec.com/v1/facturas/emitir</span>
+              <span>POST https://panel.autorizadorec.com/api/v1/documents/emit</span>
               <button id="btnCopyJson" class="btn-copy">Copiar JSON</button>
             </div>
-            <pre><code id="jsonInspectorCode">// Realiza una emisión en el Simulador para inspeccionar el JSON exacto</code></pre>
+            <pre><code id="jsonInspectorCode">// Realiza una emisión en la pestaña Emisión Operativa para inspeccionar el JSON exacto</code></pre>
           </div>
         </div>
       </section>
 
-      <!-- TAB 3: LIBRO DIARIO NIIF -->
+      <!-- TAB 4: LIBRO DIARIO NIIF -->
       <section id="tab-ledger" class="tab-content">
         <div class="card glass">
           <div class="card-header">
-            <h2>Libro Diario General (Asientos Contables NIIF para PYMES)</h2>
+            <h2>Libro Diario General (PostgreSQL <code>contabilidad.tbt_asiento</code>)</h2>
             <p class="subtitle">Verificación automática de Partida Doble (Total Debe = Total Haber)</p>
           </div>
           <div id="ledgerContainer">
-            <!-- Asientos contables serán renderizados dinámicamente -->
-            <p class="text-muted">No se han registrado asientos aún. Emite facturas desde el Simulador Operativo.</p>
+            <p class="text-muted">Cargando asientos contables desde PostgreSQL...</p>
           </div>
         </div>
       </section>
 
-      <!-- TAB 4: PLAN DE CUENTAS NIIF -->
+      <!-- TAB 5: PLAN DE CUENTAS NIIF -->
       <section id="tab-chart-accounts" class="tab-content">
         <div class="card glass">
           <div class="card-header">
             <h2>Plan de Cuentas NIIF para PYMES (Ecuador)</h2>
-            <p class="subtitle">Estructura codificada estándar parametrizada para el sistema SaaS</p>
+            <p class="subtitle">Estructura codificada estándar parametrizada en PostgreSQL</p>
           </div>
           <div class="table-responsive">
             <table class="data-table">
@@ -267,17 +309,16 @@
                 </tr>
               </thead>
               <tbody id="chartOfAccountsTable">
-                <!-- Se llena con JavaScript -->
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- TAB 5: GUIA TRIBUTARIA SRI -->
+      <!-- TAB 6: GUÍA TRIBUTARIA SRI -->
       <section id="tab-sri-guide" class="tab-content">
         <div class="card glass guide-card">
-          <h2>Guía Tributaria SRI para Desarrolladores de Software</h2>
+          <h2>Guía Tributaria SRI & Arquitectura SaaS para Desarrolladores</h2>
           
           <div class="guide-grid">
             <div class="guide-item">
@@ -295,13 +336,13 @@
             </div>
 
             <div class="guide-item">
-              <h3>3. ¿Por qué usar Middleware como AutorizadorEC?</h3>
-              <p>Construir la conexión direct a los Web Services SOAP del SRI implica implementar algoritmo Módulo 11 para la clave de 49 dígitos, firma electrónica XAdES-BES en Node/Python, reintentos de red y generación de RIDE en PDF con Código QR. El middleware reduce todo esto a un simple <code>fetch()</code> con un payload JSON.</p>
+              <h3>3. Configuración de API Key</h3>
+              <p>En la barra superior de este panel o directamente en el archivo <code>.env</code> con la clave <code>AUTORIZADOR_EC_API_KEY=tu_clave_aqui</code>. La clave se almacena de forma segura en el servidor.</p>
             </div>
 
             <div class="guide-item">
-              <h3>4. Desacoplamiento Operativo / Contable</h3>
-              <p>Tus módulos específicos (ej: agenda de médicos, inventarios de tiendas) solo generan un DTO genérico de venta. El <code>TaxEngine</code> y <code>AccountingEngine</code> centralizados procesan la tributación e impactan las cuentas de Activo, Pasivo e Ingreso automáticamente.</p>
+              <h3>4. Escalabilidad SaaS</h3>
+              <p>Para añadir nuevos negocios (dentistas, mecánicas, agencias), se utiliza el adaptador correspondiente o el endpoint universal <code>POST /api/v1/invoices/emit</code> que procesa la facturación SRI y el asiento NIIF sin modificar la base de datos central.</p>
             </div>
           </div>
         </div>

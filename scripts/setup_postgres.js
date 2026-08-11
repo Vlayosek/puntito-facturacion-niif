@@ -11,44 +11,42 @@ const dbConfig = {
   password: process.env.PGPASSWORD || 'postgres',
   host: process.env.PGHOST || 'localhost',
   port: Number(process.env.PGPORT) || 5432,
-  database: 'postgres' // Conecta a la BD por defecto para crear 'puntitodb'
+  database: 'postgres'
 };
 
 async function setupDatabase() {
-  console.log(`🔌 Conectando a PostgreSQL en ${dbConfig.host}:${dbConfig.port}...`);
+  console.log(`Conectando a PostgreSQL en ${dbConfig.host}:${dbConfig.port}...`);
   
   const client = new pg.Client(dbConfig);
   
   try {
     await client.connect();
-    console.log('✅ Conexión establecida a PostgreSQL.');
+    console.log('Conexión establecida a PostgreSQL.');
 
-    // 1. Crear base de datos 'puntitodb' si no existe
     const resDb = await client.query("SELECT 1 FROM pg_database WHERE datname = 'puntitodb'");
     if (resDb.rowCount === 0) {
-      console.log("🛠️ Creando base de datos 'puntitodb'...");
+      console.log("Creando base de datos 'puntitodb'...");
       await client.query('CREATE DATABASE puntitodb');
-      console.log("✅ Base de datos 'puntitodb' creada exitosamente.");
+      console.log("Base de datos 'puntitodb' creada exitosamente.");
     } else {
-      console.log("ℹ️ La base de datos 'puntitodb' ya existe.");
+      console.log("La base de datos 'puntitodb' ya existe.");
     }
     await client.end();
 
-    // 2. Conectar a 'puntitodb' y ejecutar el script SQL
     const puntitoClient = new pg.Client({ ...dbConfig, database: 'puntitodb' });
     await puntitoClient.connect();
 
     const sqlPath = path.join(__dirname, '..', 'database', 'init_postgres.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf-8');
 
-    console.log("📜 Ejecutando script de migración 'database/init_postgres.sql'...");
+    console.log("Ejecutando script de migración 'database/init_postgres.sql'...");
     await puntitoClient.query(sqlContent);
-    console.log("🎉 ¡Estructura de Base de Datos PostgreSQL (puntito, facturacion, contabilidad) inicializada con éxito!");
+    console.log("Estructura de Base de Datos PostgreSQL (puntito, facturacion, contabilidad) inicializada con éxito.");
 
     await puntitoClient.end();
   } catch (error) {
-    console.error('❌ Error configurando PostgreSQL:', error.message);
-    console.log('\n💡 Sugerencia: Si tu usuario o contraseña de PostgreSQL no son "postgres", ejecuta el script pasando las variables de entorno:');
+    console.error('Error configurando PostgreSQL:', error.message);
+    console.log('\nSugerencia: Si tu usuario o contraseña de PostgreSQL no son "postgres", ejecuta el script pasando las variables de entorno:');
     console.log('   PGUSER=tu_usuario PGPASSWORD=tu_clave node scripts/setup_postgres.js');
   }
 }

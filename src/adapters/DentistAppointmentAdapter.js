@@ -1,15 +1,15 @@
 /**
- * Adaptador Operativo para Consultorios Médicos / Profesionales de la Salud
+ * Adaptador Operativo para Clínicas Odontológicas y Consultorios Dentales
  * 
- * Traduce eventos de la consulta médica (Pacientes, Citas, Honorarios)
- * a peticiones de Facturación SRI (AutorizadorEC) y Asientos Contables NIIF.
+ * Traduce citas agendadas, pacientes y procedimientos dentales (Limpieza, Calza, Endodoncia)
+ * a comprobantes de Facturación Electrónica SRI (IVA 0% por Servicios de Salud) y Asientos Contables NIIF.
  */
 
 import { TaxEngine } from '../core/tax/TaxEngine.js';
 import { AutorizadorEcProvider } from '../core/sri/AutorizadorEcProvider.js';
 import { AccountingEngine } from '../core/accounting/AccountingEngine.js';
 
-export class MedicalClinicAdapter {
+export class DentistAppointmentAdapter {
   constructor(tenantConfig, autorizadorKey = 'DEMO_KEY_SANDBOX') {
     this.tenant = tenantConfig;
     this.sriProvider = new AutorizadorEcProvider(autorizadorKey, 'TEST');
@@ -18,9 +18,9 @@ export class MedicalClinicAdapter {
   }
 
   /**
-   * Procesa la atención de un paciente y genera todo el ciclo tributario y contable
+   * Procesa la atención de una cita odontológica finalizada
    */
-  async processPatientConsultation({ patient, consultationDetails, paymentMethod = 'EFECTIVO' }) {
+  async processDentalAppointment({ patient, appointmentDetails, paymentMethod = 'EFECTIVO' }) {
     const tipoIdSRI = TaxEngine.getSRITypeIdentification(patient.identificacion);
     const customerSRI = {
       tipoIdentificacionSRI: tipoIdSRI.code,
@@ -30,12 +30,13 @@ export class MedicalClinicAdapter {
       email: patient.email || 'paciente@ejemplo.com'
     };
 
+    // Los servicios de salud odontológica están gravados con Tarifa 0% de IVA según LRTI Art. 56
     const items = [{
-      codigo: consultationDetails.codigoServicio || 'MED-001',
-      descripcion: `Consulta Médica: ${consultationDetails.especialidad || 'General'} - Diagnóstico: ${consultationDetails.diagnosticoCie10 || 'Atención General'}`,
+      codigo: appointmentDetails.codigoProcedimiento || 'ODONT-001',
+      descripcion: `Atención Odontológica: ${appointmentDetails.procedimiento} - Odontólogo: ${appointmentDetails.nombreDentista}`,
       cantidad: 1,
-      precioUnitario: consultationDetails.honorario,
-      porcentajeDescuento: consultationDetails.descuento || 0,
+      precioUnitario: appointmentDetails.costoProcedimiento,
+      porcentajeDescuento: appointmentDetails.descuento || 0,
       aplicaIva15: false
     }];
 
@@ -55,7 +56,7 @@ export class MedicalClinicAdapter {
     });
 
     return {
-      module: 'CONSULTORIO_MEDICO',
+      module: 'CONSULTORIO_ODONTOLOGICO',
       invoiceNumber,
       customer: customerSRI,
       totals,
