@@ -1,0 +1,15 @@
+{
+  "name": "facturacion-sri-niif-saas",
+  "version": "1.0.0",
+  "description": "Arquitectura SaaS para Facturación Electrónica SRI (AutorizadorEC) + Contabilidad NIIF Desacoplada",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "pg": "^8.23.0"
+  }
+}

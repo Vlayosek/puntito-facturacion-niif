@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaaS Facturación Electrónica SRI (AutorizadorEC) + Contabilidad NIIF</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="brand">
+        <div class="logo-icon">🇪🇨</div>
+        <div>
+          <h1>Facturación SRI & Core Contable NIIF</h1>
+          <p class="subtitle">Arquitectura SaaS Desacoplada | Middleware <strong>AutorizadorEC API</strong></p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-sri">SRI IVA 15% / 0%</span>
+        <span class="badge badge-api">AutorizadorEC Sandbox</span>
+        <span class="badge badge-niif">NIIF para PYMES</span>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="simulator">
+        <span class="tab-icon">⚡</span> Simulador Operativo
+      </button>
+      <button class="tab-btn" data-tab="sri-inspector">
+        <span class="tab-icon">📄</span> Inspector JSON AutorizadorEC
+      </button>
+      <button class="tab-btn" data-tab="ledger">
+        <span class="tab-icon">📊</span> Libro Diario (NIIF)
+      </button>
+      <button class="tab-btn" data-tab="chart-accounts">
+        <span class="tab-icon">📚</span> Plan de Cuentas
+      </button>
+      <button class="tab-btn" data-tab="sri-guide">
+        <span class="tab-icon">💡</span> Guía Tributaria SRI
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content-area">
+
+      <!-- TAB 1: SIMULADOR OPERATIVO -->
+      <section id="tab-simulator" class="tab-content active">
+        <div class="grid-2col">
+
+          <!-- Left Column: Business Controls -->
+          <div class="card glass">
+            <div class="card-header">
+              <h2>1. Configuración del Cliente / Emisor</h2>
+              <span class="tag">Empresa SaaS</span>
+            </div>
+            
+            <div class="form-group">
+              <label for="tenantRegimen">Régimen Tributario SRI:</label>
+              <select id="tenantRegimen" class="input-select">
+                <option value="REGIMEN_GENERAL">Régimen General (Servicios Prof., Sociedades, etc.)</option>
+                <option value="RIMPE_EMPRENDEDOR">RIMPE Emprendedor (Ingresos $20k - $300k)</option>
+                <option value="RIMPE_POPULAR">RIMPE Negocio Popular (Ingresos ≤ $20k)</option>
+              </select>
+              <p class="field-hint">Afecta leyendas impresas y cálculo automático de IVA según resolución SRI.</p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="card-header">
+              <h2>2. Seleccionar Módulo Operativo</h2>
+              <span class="tag">Adaptador de Dominio</span>
+            </div>
+
+            <div class="module-selector">
+              <button class="module-card-btn active" id="btnModMedical">
+                <span class="mod-icon">🩺</span>
+                <div class="mod-info">
+                  <strong>Consultorio Médico</strong>
+                  <span>Atención, Pacientes, Citas (IVA 0% Ley)</span>
+                </div>
+              </button>
+              <button class="module-card-btn" id="btnModRetail">
+                <span class="mod-icon">🛒</span>
+                <div class="mod-info">
+                  <strong>Tienda POS / Comercio</strong>
+                  <span>Ventas de Mercadería (IVA 15%)</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Form: Medical Module -->
+            <form id="formMedical" class="module-form">
+              <h3>Datos de la Consulta Médica</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nombre del Paciente:</label>
+                  <input type="text" id="medPatientName" value="Dra. María Elena Torres" class="input-text">
+                </div>
+                <div class="form-group">
+                  <label>Cédula / RUC:</label>
+                  <input type="text" id="medPatientId" value="1712345678" class="input-text">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Especialidad / Servicio:</label>
+                  <input type="text" id="medSpecialty" value="Consulta Pediatría" class="input-text">
+                </div>
+                <div class="form-group">
+                  <label>Honorario ($ USD):</label>
+                  <input type="number" id="medFee" value="50.00" step="5" class="input-text">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Forma de Pago:</label>
+                <select id="medPaymentMethod" class="input-select">
+                  <option value="EFECTIVO">Efectivo (Ingresa a Caja General)</option>
+                  <option value="TRANSFERENCIA">Transferencia / Tarjeta (Bancos)</option>
+                  <option value="CREDITO">A Crédito (Cuentas por Cobrar)</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <span>🚀 Process consultation & Emit Factura SRI</span>
+              </button>
+            </form>
+
+            <!-- Form: Retail Module -->
+            <form id="formRetail" class="module-form hidden">
+              <h3>Venta en Mostrador (POS)</h3>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Razon Social Comprador:</label>
+                  <input type="text" id="retailCustomerName" value="INMOBILIARIA ANDINA CIA. LTDA." class="input-text">
+                </div>
+                <div class="form-group">
+                  <label>RUC / Cédula:</label>
+                  <input type="text" id="retailCustomerId" value="1790011223001" class="input-text">
+                </div>
+              </div>
+              <div class="cart-items-preview">
+                <h4>Productos en Carrito:</h4>
+                <ul>
+                  <li>📦 <strong>2x Monitor LED 24"</strong> - $120.00 c/u (IVA 15%)</li>
+                  <li>🛠️ <strong>1x Cable HDMI Alta Velocidad</strong> - $15.00 (IVA 15%)</li>
+                </ul>
+              </div>
+              <div class="form-group">
+                <label>Forma de Pago:</label>
+                <select id="retailPaymentMethod" class="input-select">
+                  <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="CREDITO">Crédito 30 Días</option>
+                </select>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <span>🚀 Process POS Sale & Emit Factura SRI</span>
+              </button>
+            </form>
+
+          </div>
+
+          <!-- Right Column: Live Output & Event Log -->
+          <div class="card glass">
+            <div class="card-header">
+              <h2>Resultado de la Operación en Tiempo Real</h2>
+              <span id="statusBadge" class="status-pill status-idle">Esperando emisión...</span>
+            </div>
+
+            <div id="outputContainer" class="output-empty">
+              <div class="empty-state-illustration">⚙️</div>
+              <p>Elige un módulo a la izquierda y presiona <strong>Emitir Factura SRI</strong> para observar el flujo completo:</p>
+              <ol class="flow-steps">
+                <li>1. Módulo Operativo emite evento de negocio.</li>
+                <li>2. TaxEngine calcula IVA 15% / 0% y verifica reglas SRI.</li>
+                <li>3. AutorizadorEcProvider firma y autoriza comprobante ante SRI.</li>
+                <li>4. AccountingEngine genera el Asiento Contable por Partida Doble.</li>
+              </ol>
+            </div>
+
+            <div id="outputResult" class="output-result hidden">
+              <!-- Summary Card -->
+              <div class="summary-box">
+                <div class="sum-row">
+                  <span>Factura No:</span>
+                  <strong id="resInvoiceNum">-</strong>
+                </div>
+                <div class="sum-row">
+                  <span>Estado SRI:</span>
+                  <span id="resSriStatus" class="tag tag-success">AUTORIZADO</span>
+                </div>
+                <div class="sum-row">
+                  <span>Clave de Acceso SRI:</span>
+                  <code id="resAccessKey" class="code-sm">-</code>
+                </div>
+                <div class="sum-row">
+                  <span>Importe Total:</span>
+                  <strong id="resTotal" class="text-vibrant">$0.00</strong>
+                </div>
+              </div>
+
+              <!-- Quick Links -->
+              <div class="quick-actions">
+                <button id="btnViewSriJson" class="btn btn-outline">🔍 Ver JSON AutorizadorEC</button>
+                <button id="btnViewJournalEntry" class="btn btn-outline">📊 Ver Asiento Contable</button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: INSPECTOR JSON AUTORIZADOREC -->
+      <section id="tab-sri-inspector" class="tab-content">
+        <div class="card glass">
+          <div class="card-header">
+            <h2>Inspector de Payload DTO (API AutorizadorEC)</h2>
+            <p class="subtitle">Estructura JSON limpia enviada al middleware antes de la firma XAdES-BES y envío SOAP al SRI.</p>
+          </div>
+          <div class="code-viewer-container">
+            <div class="code-header">
+              <span>POST https://sandbox.autorizadorec.com/v1/facturas/emitir</span>
+              <button id="btnCopyJson" class="btn-copy">Copiar JSON</button>
+            </div>
+            <pre><code id="jsonInspectorCode">// Realiza una emisión en el Simulador para inspeccionar el JSON exacto</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: LIBRO DIARIO NIIF -->
+      <section id="tab-ledger" class="tab-content">
+        <div class="card glass">
+          <div class="card-header">
+            <h2>Libro Diario General (Asientos Contables NIIF para PYMES)</h2>
+            <p class="subtitle">Verificación automática de Partida Doble (Total Debe = Total Haber)</p>
+          </div>
+          <div id="ledgerContainer">
+            <!-- Asientos contables serán renderizados dinámicamente -->
+            <p class="text-muted">No se han registrado asientos aún. Emite facturas desde el Simulador Operativo.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: PLAN DE CUENTAS NIIF -->
+      <section id="tab-chart-accounts" class="tab-content">
+        <div class="card glass">
+          <div class="card-header">
+            <h2>Plan de Cuentas NIIF para PYMES (Ecuador)</h2>
+            <p class="subtitle">Estructura codificada estándar parametrizada para el sistema SaaS</p>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Código NIIF</th>
+                  <th>Nombre de la Cuenta</th>
+                  <th>Tipo</th>
+                  <th>Nivel</th>
+                  <th>Imputable</th>
+                </tr>
+              </thead>
+              <tbody id="chartOfAccountsTable">
+                <!-- Se llena con JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: GUIA TRIBUTARIA SRI -->
+      <section id="tab-sri-guide" class="tab-content">
+        <div class="card glass guide-card">
+          <h2>Guía Tributaria SRI para Desarrolladores de Software</h2>
+          
+          <div class="guide-grid">
+            <div class="guide-item">
+              <h3>1. Tarifa del IVA (15% vs 0%)</h3>
+              <p>En Ecuador, la tarifa general de IVA vigente es del <strong>15%</strong> (código de impuesto SRI <code>2</code>, código de porcentaje <code>4</code>). Los servicios de salud, educación, medicina y productos de canasta básica son <strong>IVA 0%</strong> (código de porcentaje <code>0</code>).</p>
+            </div>
+
+            <div class="guide-item">
+              <h3>2. Regímenes RIMPE vs Régimen General</h3>
+              <p>El SRI exige colocar leyendas específicas en la info adicional del comprobante:</p>
+              <ul>
+                <li><strong>RIMPE Negocio Popular:</strong> <em>"Contribuyente Negocio Popular - Régimen RIMPE"</em> (sin desglosar IVA).</li>
+                <li><strong>RIMPE Emprendedor:</strong> <em>"Contribuyente Régimen RIMPE"</em> (desglosa IVA 15% o 0%).</li>
+              </ul>
+            </div>
+
+            <div class="guide-item">
+              <h3>3. ¿Por qué usar Middleware como AutorizadorEC?</h3>
+              <p>Construir la conexión direct a los Web Services SOAP del SRI implica implementar algoritmo Módulo 11 para la clave de 49 dígitos, firma electrónica XAdES-BES en Node/Python, reintentos de red y generación de RIDE en PDF con Código QR. El middleware reduce todo esto a un simple <code>fetch()</code> con un payload JSON.</p>
+            </div>
+
+            <div class="guide-item">
+              <h3>4. Desacoplamiento Operativo / Contable</h3>
+              <p>Tus módulos específicos (ej: agenda de médicos, inventarios de tiendas) solo generan un DTO genérico de venta. El <code>TaxEngine</code> y <code>AccountingEngine</code> centralizados procesan la tributación e impactan las cuentas de Activo, Pasivo e Ingreso automáticamente.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
