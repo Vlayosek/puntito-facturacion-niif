@@ -11,14 +11,38 @@ const pool = new pg.Pool({
 });
 
 export class DatabaseService {
-  static async getOrCreateTenant(tenantData) {
+  /**
+   * Helper para mapear métodos de pago a códigos de catálogo SRI tbc_forma_pago
+   */
+  static mapFormaPagoSRI(formaPagoStr) {
+    if (!formaPagoStr) return '01';
+    const upper = String(formaPagoStr).toUpperCase();
+    if (upper.includes('EFECTIVO') || upper === '01') return '01';
+    if (upper.includes('DEBITO') || upper.includes('DÉBITO') || upper === '16') return '16';
+    if (upper.includes('CREDITO') || upper.includes('CRÉDITO') || upper === '19') return '19';
+    if (upper.includes('TRANSFERENCIA') || upper.includes('BANCO') || upper === '20') return '20';
+    return '20'; // Default a Transferencia con uso del sistema financiero
+  }
+
+  /**
+   * Obtiene o crea la empresa emisora y su establecimiento en puntito y facturación
+   */
+  static async getOrCreateTenant(tenantData = {}) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
+      const cleanRuc = String(tenantData.ruc || '1792123456001').trim().substring(0, 13);
+      const cleanRazonSocial = String(tenantData.razonSocial || 'EMPRESA EMISORA S.A.').trim().substring(0, 300);
+      const cleanNombreComercial = String(tenantData.nombreComercial || cleanRazonSocial).trim().substring(0, 300);
+      const cleanDireccion = String(tenantData.direccionMatriz || 'Quito, Ecuador').trim().substring(0, 300);
+      const cleanRegimen = String(tenantData.regimenSRI || 'REGIMEN_GENERAL').trim().substring(0, 30);
+      const esObligado = (tenantData.obligadoContabilidad === true || tenantData.obligadoContabilidad === 'SI') ? 'SI' : 'NO';
+
+      // 1. puntito.tbm_cliente
       let res = await client.query(
         'SELECT id_cliente FROM puntito.tbm_cliente WHERE ruc = $1',
-        [tenantData.ruc]
+        [cleanRuc]
       );
 
       let idCliente;
@@ -29,14 +53,15 @@ export class DatabaseService {
         const ins = await client.query(
           `INSERT INTO puntito.tbm_cliente (codigo_cliente, ruc, razon_social, nombre_comercial, email, telefono)
            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_cliente`,
-          [codigoCliente, tenantData.ruc, tenantData.razonSocial, tenantData.nombreComercial, tenantData.email || 'emisor@ejemplo.ec', tenantData.telefono || '0999999999']
+          [codigoCliente, cleanRuc, cleanRazonSocial, cleanNombreComercial, tenantData.email || 'emisor@ejemplo.ec', tenantData.telefono || '0999999999']
         );
         idCliente = ins.rows[0].id_cliente;
       }
 
+      // 2. facturacion.tbm_emisor
       res = await client.query(
         'SELECT id_emisor FROM facturacion.tbm_emisor WHERE id_cliente_puntito = $1 AND ruc = $2',
-        [idCliente, tenantData.ruc]
+        [idCliente, cleanRuc]
       );
 
       let idEmisor;
@@ -46,13 +71,15 @@ export class DatabaseService {
         const ins = await client.query(
           `INSERT INTO facturacion.tbm_emisor (id_cliente_puntito, ruc, razon_social, nombre_comercial, direccion_matriz, regimen_sri, obligado_contabilidad)
            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_emisor`,
-          [idCliente, tenantData.ruc, tenantData.razonSocial, tenantData.nombreComercial, tenantData.direccionMatriz || 'Quito, Ecuador', tenantData.regimenSRI || 'REGIMEN_GENERAL', tenantData.obligadoContabilidad ? 'SI' : 'NO']
+          [idCliente, cleanRuc, cleanRazonSocial, cleanNombreComercial, cleanDireccion, cleanRegimen, esObligado]
         );
         idEmisor = ins.rows[0].id_emisor;
       }
 
-      const codEstab = tenantData.establecimiento || '001';
-      const ptoEmi = tenantData.puntoEmision || '001';
+      // 3. facturacion.tbm_establecimiento
+      const codEstab = String(tenantData.establecimiento || '001').padStart(3, '0').substring(0, 3);
+      const ptoEmi = String(tenantData.puntoEmision || '001').padStart(3, '0').substring(0, 3);
+
       res = await client.query(
         'SELECT id_establecimiento FROM facturacion.tbm_establecimiento WHERE id_cliente_puntito = $1 AND codigo_establecimiento = $2 AND punto_emision = $3',
         [idCliente, codEstab, ptoEmi]
@@ -65,7 +92,7 @@ export class DatabaseService {
         const ins = await client.query(
           `INSERT INTO facturacion.tbm_establecimiento (id_cliente_puntito, id_emisor, codigo_establecimiento, punto_emision, direccion)
            VALUES ($1, $2, $3, $4, $5) RETURNING id_establecimiento`,
-          [idCliente, idEmisor, codEstab, ptoEmi, tenantData.direccionMatriz || 'Quito, Ecuador']
+          [idCliente, idEmisor, codEstab, ptoEmi, cleanDireccion]
         );
         idEstablecimiento = ins.rows[0].id_establecimiento;
       }
@@ -80,12 +107,21 @@ export class DatabaseService {
     }
   }
 
-  static async getOrCreateCustomer(idClientePuntito, customerData) {
+  /**
+   * Obtiene o crea el cliente comprador de la factura
+   */
+  static async getOrCreateCustomer(idClientePuntito, customerData = {}) {
     const client = await pool.connect();
     try {
+      const allowedTypes = ['04', '05', '06', '07', '08'];
+      const tipoId = allowedTypes.includes(customerData.tipoIdentificacionSRI) ? customerData.tipoIdentificacionSRI : '07';
+      const cleanId = String(customerData.identificacion || '9999999999999').trim().substring(0, 20);
+      const cleanNombre = String(customerData.razonSocial || customerData.nombre || 'CONSUMIDOR FINAL').trim().substring(0, 300);
+      const cleanEmail = String(customerData.email || 'cliente@ejemplo.ec').trim().substring(0, 300);
+
       const res = await client.query(
         'SELECT id_fe_cliente FROM facturacion.tbm_cliente WHERE id_cliente_puntito = $1 AND tipo_identificacion = $2 AND identificacion = $3',
-        [idClientePuntito, customerData.tipoIdentificacionSRI, customerData.identificacion]
+        [idClientePuntito, tipoId, cleanId]
       );
 
       if (res.rowCount > 0) {
@@ -95,7 +131,7 @@ export class DatabaseService {
       const ins = await client.query(
         `INSERT INTO facturacion.tbm_cliente (id_cliente_puntito, tipo_identificacion, identificacion, razon_social, email, telefono)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_fe_cliente`,
-        [idClientePuntito, customerData.tipoIdentificacionSRI, customerData.identificacion, customerData.razonSocial, customerData.email, customerData.telefono || '']
+        [idClientePuntito, tipoId, cleanId, cleanNombre, cleanEmail, customerData.telefono || '']
       );
 
       return ins.rows[0].id_fe_cliente;
@@ -104,6 +140,9 @@ export class DatabaseService {
     }
   }
 
+  /**
+   * Obtiene el siguiente secuencial numérico único del SRI
+   */
   static async getNextSequential(idClientePuntito, idEstablecimiento, codDoc = '01') {
     const res = await pool.query(
       'SELECT facturacion.get_next_sequential($1, $2, $3) AS secuencial',
@@ -112,16 +151,27 @@ export class DatabaseService {
     return res.rows[0].secuencial;
   }
 
-  static async saveInvoiceTransaction({ tenantIds, customerId, codDoc = '01', secuencialStr, totals, items, sriResponse, journalEntry }) {
+  /**
+   * Guarda una transacción completa: Factura + Detalles + Impuestos + Método Pago + Asiento NIIF + Detalles Asiento
+   */
+  static async saveInvoiceTransaction({ tenantIds, customerId, codDoc = '01', secuencialStr, totals, items, sriResponse, journalEntry, formaPago = 'EFECTIVO' }) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
-      const sriData = sriResponse.data || {};
-      const claveAcceso = sriData.claveAcceso || `CLAVE-MOCK-${Date.now()}`;
-      const estadoSRI = sriData.estadoSRI || 'AUTORIZADO';
+      const sriData = sriResponse?.data || {};
+      const claveAcceso = String(sriData.claveAcceso || `CLAVE-MOCK-${Date.now()}`).substring(0, 49);
+      const estadoSRI = String(sriData.estadoSRI || 'AUTORIZADO').substring(0, 15);
       const rideUrl = `/ride-viewer.html?clave=${claveAcceso}`;
+      const cleanSecuencial = String(secuencialStr || '000000001').padStart(9, '0').substring(0, 9);
+      const codigoNumerico = String(sriData.codigoNumerico || '12345678').padStart(8, '0').substring(0, 8);
 
+      const subSinImp = Number(totals.subtotalSinImpuestos || (totals.subtotal15 + totals.subtotal0)) || 0;
+      const totDesc = Number(totals.totalDescuento) || 0;
+      const totIva = Number(totals.totalIva) || 0;
+      const impTot = Number(totals.importeTotal) || 0;
+
+      // 1. Guardar en facturacion.tbt_documento
       const insDoc = await client.query(
         `INSERT INTO facturacion.tbt_documento (
           id_cliente_puntito, id_emisor, id_establecimiento, id_fe_cliente,
@@ -133,39 +183,72 @@ export class DatabaseService {
         RETURNING id_documento`,
         [
           tenantIds.idCliente, tenantIds.idEmisor, tenantIds.idEstablecimiento, customerId,
-          codDoc, secuencialStr, '12345678', claveAcceso,
-          estadoSRI, totals.subtotalSinImpuestos, totals.totalDescuento, totals.totalIva, totals.importeTotal,
-          JSON.stringify(sriData.payloadEnviado || {}), JSON.stringify(sriResponse), claveAcceso,
+          codDoc, cleanSecuencial, codigoNumerico, claveAcceso,
+          estadoSRI, subSinImp, totDesc, totIva, impTot,
+          JSON.stringify(sriData.payloadEnviado || {}), JSON.stringify(sriResponse || {}), claveAcceso,
           rideUrl, sriData.xmlUrl || ''
         ]
       );
       const idDocumento = insDoc.rows[0].id_documento;
 
-      for (const item of items) {
-        // Garantizar que la descripción nunca sea NULL/undefined soportando 'descripcion' y 'nombre'
-        const descripcionTxt = item.descripcion || item.nombre || 'Producto / Servicio General';
-        const codigoTxt = item.codigo || item.codigoPrincipal || item.sku || 'PROD';
+      // 2. Guardar en facturacion.tbt_documento_detalle y facturacion.tbt_detalle_impuesto
+      for (const item of (items || [])) {
+        const descripcionTxt = String(item.descripcion || item.nombre || 'Producto / Servicio General').trim().substring(0, 300);
+        const codigoTxt = String(item.codigo || item.codigoPrincipal || item.sku || 'PROD').trim().substring(0, 25);
+        const cantidad = Number(item.cantidad) || 1;
+        const precioUnitario = Number(item.precioUnitario) || 0;
+        const descuento = Number(item.valorDescuento || item.descuento) || 0;
+        const precioTotalSinImp = Number(item.subtotalNeto || (cantidad * precioUnitario - descuento)) || 0;
 
-        await client.query(
+        const insDet = await client.query(
           `INSERT INTO facturacion.tbt_documento_detalle (
             id_documento, codigo_principal, descripcion, cantidad, precio_unitario, descuento, precio_total_sin_imp
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [idDocumento, codigoTxt, descripcionTxt, item.cantidad, item.precioUnitario, item.valorDescuento || 0, item.subtotalNeto]
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id_detalle`,
+          [idDocumento, codigoTxt, descripcionTxt, cantidad, precioUnitario, descuento, precioTotalSinImp]
+        );
+        const idDetalle = insDet.rows[0].id_detalle;
+
+        // Impuesto por ítem (IVA 15% o 0%)
+        const codPorcentaje = item.codigoPorcentajeSRI || (item.aplicaIva15 ? '4' : '0');
+        const tarifa = item.tarifaIva || (item.aplicaIva15 ? 15 : 0);
+        const valorIva = item.valorIva || (item.aplicaIva15 ? Number((precioTotalSinImp * 0.15).toFixed(2)) : 0);
+
+        await client.query(
+          `INSERT INTO facturacion.tbt_detalle_impuesto (
+            id_detalle, codigo_impuesto, codigo_porcentaje, tarifa, base_imponible, valor
+          ) VALUES ($1, $2, $3, $4, $5, $6)`,
+          [idDetalle, '2', codPorcentaje, tarifa, precioTotalSinImp, valorIva]
         );
       }
+
+      // 3. Guardar en facturacion.tbt_pago
+      const codigoFormaPago = this.mapFormaPagoSRI(formaPago);
+      await client.query(
+        `INSERT INTO facturacion.tbt_pago (id_documento, forma_pago, total)
+         VALUES ($1, $2, $3)`,
+        [idDocumento, codigoFormaPago, impTot]
+      );
+
+      // 4. Guardar Asiento Contable en contabilidad.tbt_asiento
+      const numAsiento = String(journalEntry.entryId || `ASI-${Date.now()}`).substring(0, 30);
+      const conceptoTxt = String(journalEntry.concept || 'Asiento Contable de Facturación').substring(0, 500);
 
       const insAsiento = await client.query(
         `INSERT INTO contabilidad.tbt_asiento (
           id_cliente_puntito, id_documento, numero_asiento, fecha, concepto, total_debe, total_haber, is_balanced
         ) VALUES ($1, $2, $3, CURRENT_DATE, $4, $5, $6, $7) RETURNING id_asiento`,
-        [tenantIds.idCliente, idDocumento, journalEntry.entryId, journalEntry.concept, journalEntry.totalDebit, journalEntry.totalCredit, journalEntry.isBalanced]
+        [tenantIds.idCliente, idDocumento, numAsiento, conceptoTxt, Number(journalEntry.totalDebit) || impTot, Number(journalEntry.totalCredit) || impTot, Boolean(journalEntry.isBalanced)]
       );
       const idAsiento = insAsiento.rows[0].id_asiento;
 
-      for (const line of journalEntry.lines) {
+      // 5. Guardar Detalle del Asiento en contabilidad.tbt_asiento_detalle
+      for (const line of (journalEntry.lines || [])) {
+        const cleanAccountCode = String(line.accountCode || '1.1.01.01').substring(0, 30);
+        const cleanAccountName = String(line.accountName || 'Caja General').substring(0, 200);
+
         let resCuenta = await client.query(
           'SELECT id_cuenta FROM contabilidad.tbm_plan_cuentas WHERE id_cliente_puntito = $1 AND codigo_cuenta = $2',
-          [tenantIds.idCliente, line.accountCode]
+          [tenantIds.idCliente, cleanAccountCode]
         );
         let idCuenta;
         if (resCuenta.rowCount > 0) {
@@ -174,7 +257,7 @@ export class DatabaseService {
           const insCuenta = await client.query(
             `INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel)
              VALUES ($1, $2, $3, $4, $5) RETURNING id_cuenta`,
-            [tenantIds.idCliente, line.accountCode, line.accountName, 'GENERAL', 4]
+            [tenantIds.idCliente, cleanAccountCode, cleanAccountName, 'GENERAL', 4]
           );
           idCuenta = insCuenta.rows[0].id_cuenta;
         }
@@ -182,7 +265,7 @@ export class DatabaseService {
         await client.query(
           `INSERT INTO contabilidad.tbt_asiento_detalle (id_asiento, id_cuenta, debe, haber)
            VALUES ($1, $2, $3, $4)`,
-          [idAsiento, idCuenta, line.debit, line.credit]
+          [idAsiento, idCuenta, Number(line.debit) || 0, Number(line.credit) || 0]
         );
       }
 
@@ -190,6 +273,7 @@ export class DatabaseService {
       return idDocumento;
     } catch (err) {
       await client.query('ROLLBACK');
+      console.error('Error guardando transacción en PostgreSQL:', err);
       throw err;
     } finally {
       client.release();
@@ -247,7 +331,7 @@ export class DatabaseService {
       entries.push({
         entryId: row.numero_asiento,
         invoiceRef: row.invoice_ref || 'FACTURA',
-        date: row.fecha.toISOString().substring(0, 10),
+        date: row.fecha ? row.fecha.toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10),
         concept: row.concepto,
         totalDebit: Number(row.total_debe),
         totalCredit: Number(row.total_haber),

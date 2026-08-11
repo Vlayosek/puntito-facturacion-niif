@@ -20,29 +20,28 @@ export class DentistAppointmentAdapter {
   /**
    * Procesa la atención de una cita odontológica finalizada
    */
-  async processDentalAppointment({ patient, appointmentDetails, paymentMethod = 'EFECTIVO' }) {
+  async processDentalAppointment({ patient = {}, appointmentDetails = {}, paymentMethod = 'EFECTIVO' }) {
     const tipoIdSRI = TaxEngine.getSRITypeIdentification(patient.identificacion);
     const customerSRI = {
       tipoIdentificacionSRI: tipoIdSRI.code,
       identificacion: patient.identificacion || '9999999999999',
-      razonSocial: patient.nombreCompleto || 'CONSUMIDOR FINAL',
+      razonSocial: patient.nombreCompleto || patient.nombre || 'CONSUMIDOR FINAL',
       direccion: patient.direccion || 'Quito, Ecuador',
       email: patient.email || 'paciente@ejemplo.com'
     };
 
-    // Los servicios de salud odontológica están gravados con Tarifa 0% de IVA según LRTI Art. 56
     const items = [{
       codigo: appointmentDetails.codigoProcedimiento || 'ODONT-001',
-      descripcion: `Atención Odontológica: ${appointmentDetails.procedimiento} - Odontólogo: ${appointmentDetails.nombreDentista}`,
+      descripcion: `Atención Odontológica: ${appointmentDetails.procedimiento || 'Tratamiento Dental'} - Odontólogo: ${appointmentDetails.nombreDentista || 'Odontólogo General'}`,
       cantidad: 1,
-      precioUnitario: appointmentDetails.costoProcedimiento,
-      porcentajeDescuento: appointmentDetails.descuento || 0,
+      precioUnitario: Number(appointmentDetails.costoProcedimiento) || 40,
+      porcentajeDescuento: Number(appointmentDetails.descuento) || 0,
       aplicaIva15: false
     }];
 
     const totals = TaxEngine.calculateTotals(items, this.tenant.regimenSRI);
     const secuencialStr = String(this.secuencialCounter++).padStart(9, '0');
-    const invoiceNumber = `${this.tenant.establecimiento}-${this.tenant.puntoEmision}-${secuencialStr}`;
+    const invoiceNumber = `${this.tenant.establecimiento || '001'}-${this.tenant.puntoEmision || '001'}-${secuencialStr}`;
 
     const payload = this.sriProvider.buildPayload(this.tenant, customerSRI, totals, items, secuencialStr);
     const sriResponse = await this.sriProvider.sendInvoice(payload);
