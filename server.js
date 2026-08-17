@@ -181,7 +181,9 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
     });
   } catch (error) {
     console.error('Error en Endpoint Universal de Facturación:', error);
-    res.status(500).json({ success: false, error: error.message });
+    // AggregateError (ej: ECONNREFUSED de pg) tiene .message vacío; usar .toString() o .errors[]
+    const errMsg = error.message || (error.errors && error.errors[0]?.message) || error.toString() || 'Error desconocido';
+    res.status(500).json({ success: false, error: errMsg, code: error.code });
   }
 });
 

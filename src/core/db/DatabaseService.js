@@ -321,7 +321,7 @@ export class DatabaseService {
     const entries = [];
     for (const row of resAsientos.rows) {
       const resLines = await pool.query(
-        `SELECT l.debit, l.haber as credit, c.codigo_cuenta as account_code, c.nombre_cuenta as account_name
+        `SELECT l.debe as debit, l.haber as credit, c.codigo_cuenta as account_code, c.nombre_cuenta as account_name
          FROM contabilidad.tbt_asiento_detalle l
          JOIN contabilidad.tbm_plan_cuentas c ON l.id_cuenta = c.id_cuenta
          WHERE l.id_asiento = $1`,
