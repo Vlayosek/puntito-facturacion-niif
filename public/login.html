@@ -3,22 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Puntito SaaS — Iniciar Sesión</title>
+  <title>Puntito SaaS — Iniciar Sesion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --surface2: #1c2433;
-      --border: #30363d;
-      --text: #e6edf3;
-      --text-muted: #7d8590;
       --accent: #2563eb;
       --accent-hover: #1d4ed8;
-      --accent-glow: rgba(37,99,235,0.3);
-      --success: #22c55e;
-      --error: #ef4444;
+      --accent-light: rgba(37,99,235,0.08);
+      --accent-border: rgba(37,99,235,0.25);
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --error-bg: rgba(239,68,68,0.06);
+      --error-border: rgba(239,68,68,0.3);
+      --error-text: #dc2626;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,53 +33,123 @@
       align-items: center;
       justify-content: center;
       padding: 20px;
-      background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.08) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 50%);
     }
 
-    .login-card {
+    /* Split layout */
+    .login-wrapper {
+      display: flex;
       width: 100%;
-      max-width: 420px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 40px 36px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      max-width: 920px;
+      min-height: 540px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
       animation: slideUp 0.4s ease;
     }
 
     @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(18px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .brand {
+    /* Lado izquierdo — decorativo */
+    .login-left {
+      flex: 1;
+      background: linear-gradient(145deg, #1e40af 0%, #2563eb 50%, #7c3aed 100%);
+      padding: 48px 40px;
       display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 32px;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+      position: relative;
+      overflow: hidden;
     }
 
-    .logo-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--accent), #7c3aed);
-      border-radius: 12px;
+    .login-left::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 220px; height: 220px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .login-left::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -40px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .left-brand {
+      position: relative; z-index: 1;
+    }
+
+    .left-logo {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; font-weight: 700; color: white;
-      box-shadow: 0 0 20px var(--accent-glow);
+      font-size: 1.6rem; font-weight: 700;
+      margin-bottom: 20px;
+      backdrop-filter: blur(4px);
     }
 
-    .brand-text h1 { font-size: 1.2rem; font-weight: 700; }
-    .brand-text p  { font-size: 0.75rem; color: var(--text-muted); }
+    .left-brand h1 {
+      font-size: 1.6rem; font-weight: 700;
+      margin-bottom: 8px;
+    }
 
-    h2 {
-      font-size: 1.4rem;
-      font-weight: 600;
+    .left-brand p {
+      font-size: 0.85rem;
+      opacity: 0.8;
+      line-height: 1.5;
+    }
+
+    .left-features {
+      position: relative; z-index: 1;
+    }
+
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .feature-icon {
+      width: 32px; height: 32px; min-width: 32px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+
+    .feature-item .feat-text strong { font-size: 0.9rem; display: block; margin-bottom: 2px; }
+    .feature-item .feat-text span   { font-size: 0.78rem; opacity: 0.75; }
+
+    .left-footer {
+      position: relative; z-index: 1;
+      font-size: 0.75rem; opacity: 0.6;
+    }
+
+    /* Lado derecho — formulario */
+    .login-right {
+      flex: 0 0 400px;
+      background: var(--surface);
+      padding: 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .login-right h2 {
+      font-size: 1.5rem; font-weight: 700;
+      color: var(--text);
       margin-bottom: 6px;
     }
 
-    .subtitle {
+    .login-right .subtitle {
       font-size: 0.85rem;
       color: var(--text-muted);
       margin-bottom: 28px;
@@ -88,19 +159,19 @@
 
     label {
       display: block;
-      font-size: 0.82rem;
-      font-weight: 500;
+      font-size: 0.78rem;
+      font-weight: 600;
       color: var(--text-muted);
-      margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.06em;
+      margin-bottom: 7px;
     }
 
     input {
       width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
       padding: 11px 14px;
       color: var(--text);
       font-family: 'Outfit', sans-serif;
@@ -111,17 +182,17 @@
 
     input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
+      box-shadow: 0 0 0 3px var(--accent-light);
     }
 
-    input::placeholder { color: var(--text-muted); }
+    input::placeholder { color: #d1d5db; }
 
     .btn-login {
       width: 100%;
       background: linear-gradient(135deg, var(--accent), #1d4ed8);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 13px;
       font-family: 'Outfit', sans-serif;
       font-size: 1rem;
@@ -129,25 +200,22 @@
       cursor: pointer;
       margin-top: 8px;
       transition: all 0.2s;
-      box-shadow: 0 4px 14px var(--accent-glow);
+      box-shadow: 0 4px 14px rgba(37,99,235,0.3);
     }
 
     .btn-login:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px var(--accent-glow);
+      box-shadow: 0 6px 20px rgba(37,99,235,0.4);
     }
 
-    .btn-login:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    .btn-login:disabled { opacity: 0.65; cursor: not-allowed; }
 
     .error-msg {
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.35);
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
       border-radius: 8px;
       padding: 10px 14px;
-      color: #fca5a5;
+      color: var(--error-text);
       font-size: 0.85rem;
       margin-bottom: 16px;
       display: none;
@@ -162,20 +230,21 @@
     }
 
     .demo-hint {
-      background: rgba(37,99,235,0.08);
-      border: 1px solid rgba(37,99,235,0.2);
-      border-radius: 8px;
-      padding: 10px 14px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      border-radius: 10px;
+      padding: 12px 14px;
       font-size: 0.8rem;
       color: var(--text-muted);
+      line-height: 1.6;
     }
 
-    .demo-hint strong { color: var(--text); }
+    .demo-hint strong { color: var(--accent); }
 
     .loading-spinner {
       display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 15px; height: 15px;
+      border: 2px solid rgba(255,255,255,0.4);
       border-top-color: white;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
@@ -184,65 +253,112 @@
     }
 
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Responsive: en mobile, ocultar el panel izquierdo */
+    @media (max-width: 640px) {
+      .login-left { display: none; }
+      .login-right { flex: 1; border-radius: 20px; }
+      .login-wrapper { max-width: 420px; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="login-card">
-    <div class="brand">
-      <div class="logo-icon">P</div>
-      <div class="brand-text">
+  <div class="login-wrapper">
+
+    <!-- Panel izquierdo decorativo -->
+    <div class="login-left">
+      <div class="left-brand">
+        <div class="left-logo">P</div>
         <h1>Puntito SaaS</h1>
-        <p>Facturación Electrónica SRI + NIIF</p>
+        <p>Plataforma de Facturacion Electronica SRI<br>con Contabilidad NIIF automatica para Ecuador.</p>
+      </div>
+
+      <div class="left-features">
+        <div class="feature-item">
+          <div class="feature-icon">&#128196;</div>
+          <div class="feat-text">
+            <strong>Facturacion SRI</strong>
+            <span>IVA 15% / 0%, RIMPE, Regimen General</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">&#128200;</div>
+          <div class="feat-text">
+            <strong>Contabilidad NIIF</strong>
+            <span>Partida Doble automatica por cada emision</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">&#128274;</div>
+          <div class="feat-text">
+            <strong>Multi-tenant Seguro</strong>
+            <span>JWT + API Key por empresa en PostgreSQL</span>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">&#9729;</div>
+          <div class="feat-text">
+            <strong>AutorizadorEC</strong>
+            <span>Integracion con firma XAdES-BES y RIDE PDF</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="left-footer">
+        &copy; 2026 Puntito SaaS &mdash; Powered by Node.js + PostgreSQL 17
       </div>
     </div>
 
-    <h2>Iniciar Sesión</h2>
-    <p class="subtitle">Ingresa tus credenciales para acceder al sistema</p>
+    <!-- Panel derecho: formulario -->
+    <div class="login-right">
+      <h2>Bienvenido de vuelta</h2>
+      <p class="subtitle">Ingresa tus credenciales para acceder al sistema</p>
 
-    <div class="error-msg" id="errorMsg"></div>
+      <div class="error-msg" id="errorMsg"></div>
 
-    <form id="loginForm">
-      <div class="form-group">
-        <label for="inputUsuario">Usuario</label>
-        <input
-          type="text"
-          id="inputUsuario"
-          placeholder="Ej: admin"
-          autocomplete="username"
-          required
-        >
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="inputUsuario">Usuario</label>
+          <input
+            type="text"
+            id="inputUsuario"
+            placeholder="Ej: admin"
+            autocomplete="username"
+            required
+          >
+        </div>
+        <div class="form-group">
+          <label for="inputPassword">Contrasena</label>
+          <input
+            type="password"
+            id="inputPassword"
+            placeholder="Tu contrasena"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          Iniciar Sesion
+        </button>
+      </form>
+
+      <hr class="divider">
+
+      <div class="demo-hint">
+        <strong>Credenciales iniciales:</strong><br>
+        Usuario: <strong>admin</strong> &nbsp;&bull;&nbsp; Contrasena: <strong>Admin2026!</strong><br>
+        <span style="font-size:0.75rem; color:#9ca3af;">Cambia la contrasena desde <strong style="color:#6b7280;">Mi Cuenta</strong> tras el primer login.</span>
       </div>
-      <div class="form-group">
-        <label for="inputPassword">Contraseña</label>
-        <input
-          type="password"
-          id="inputPassword"
-          placeholder="Tu contraseña"
-          autocomplete="current-password"
-          required
-        >
-      </div>
-
-      <button type="submit" class="btn-login" id="btnLogin">
-        Iniciar Sesión
-      </button>
-    </form>
-
-    <hr class="divider">
-
-    <div class="demo-hint">
-      <strong>Credenciales de primer acceso:</strong><br>
-      Usuario: <strong>admin</strong> &nbsp;|&nbsp; Contraseña: <strong>Admin2026!</strong><br>
-      <small style="color:#6e7681; margin-top:4px; display:block">Cambia la contraseña desde Configuración tras el primer login.</small>
     </div>
+
   </div>
 
   <script>
     // Si ya hay token valido, redirigir al dashboard
     const token = localStorage.getItem('puntito_token');
     if (token) {
-      // Verificar que el token no ha expirado
       fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
         .then(r => r.json())
         .then(d => { if (d.success) window.location.href = '/'; })
@@ -251,10 +367,9 @@
 
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const btn = document.getElementById('btnLogin');
+      const btn   = document.getElementById('btnLogin');
       const errEl = document.getElementById('errorMsg');
-
-      const usuario = document.getElementById('inputUsuario').value.trim();
+      const usuario  = document.getElementById('inputUsuario').value.trim();
       const password = document.getElementById('inputPassword').value;
 
       btn.disabled = true;
@@ -267,7 +382,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usuario, password })
         });
-
         const data = await res.json();
 
         if (data.success) {
@@ -275,16 +389,16 @@
           localStorage.setItem('puntito_user', JSON.stringify(data.user));
           window.location.href = '/';
         } else {
-          errEl.textContent = data.error || 'Error al iniciar sesión';
+          errEl.textContent = data.error || 'Usuario o contrasena incorrectos';
           errEl.classList.add('show');
           btn.disabled = false;
-          btn.innerHTML = 'Iniciar Sesión';
+          btn.innerHTML = 'Iniciar Sesion';
         }
       } catch (err) {
-        errEl.textContent = 'Error de conexión con el servidor';
+        errEl.textContent = 'Error de conexion con el servidor';
         errEl.classList.add('show');
         btn.disabled = false;
-        btn.innerHTML = 'Iniciar Sesión';
+        btn.innerHTML = 'Iniciar Sesion';
       }
     });
   </script>

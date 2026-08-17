@@ -49,7 +49,7 @@
     <!-- Navigation Tabs -->
     <nav class="nav-tabs">
       <button class="tab-btn active" data-tab="simulator">
-        <span class="tab-badge bg-blue">+</span> Emisión Operativa
+        <span class="tab-badge bg-blue">+</span> Emision Operativa
       </button>
       <button class="tab-btn" data-tab="db-invoices">
         <span class="tab-badge bg-emerald">DB</span> Facturas PostgreSQL
@@ -64,7 +64,10 @@
         <span class="tab-badge bg-slate">CATALOGO</span> Plan de Cuentas
       </button>
       <button class="tab-btn" data-tab="sri-guide">
-        <span class="tab-badge bg-amber">SRI</span> Guía Tributaria
+        <span class="tab-badge bg-amber">SRI</span> Guia Tributaria
+      </button>
+      <button class="tab-btn" data-tab="mi-cuenta">
+        <span class="tab-badge bg-blue">&#9881;</span> Mi Cuenta
       </button>
     </nav>
 
@@ -350,6 +353,82 @@
               <p>Para añadir nuevos negocios (dentistas, mecánicas, agencias), se utiliza el adaptador correspondiente o el endpoint universal <code>POST /api/v1/invoices/emit</code> que procesa la facturación SRI y el asiento NIIF sin modificar la base de datos central.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- TAB 7: MI CUENTA -->
+      <section id="tab-mi-cuenta" class="tab-content">
+        <div class="grid-2col">
+
+          <!-- Informacion del usuario -->
+          <div class="card glass">
+            <div class="card-header">
+              <h2>Informacion de la Sesion</h2>
+              <span class="tag">JWT Activo</span>
+            </div>
+            <div style="padding: 8px 0;">
+              <div class="sum-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-size:0.85rem;">Usuario</span>
+                <strong id="profileUsuario">-</strong>
+              </div>
+              <div class="sum-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-size:0.85rem;">Nombre</span>
+                <strong id="profileNombre">-</strong>
+              </div>
+              <div class="sum-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-size:0.85rem;">Email</span>
+                <strong id="profileEmail">-</strong>
+              </div>
+              <div class="sum-row" style="padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-size:0.85rem;">Empresa</span>
+                <strong id="profileEmpresa">-</strong>
+              </div>
+              <div class="sum-row" style="padding: 10px 0;">
+                <span style="color:var(--text-muted); font-size:0.85rem;">RUC Empresa</span>
+                <strong id="profileRuc">-</strong>
+              </div>
+            </div>
+            <hr class="divider">
+            <button id="btnLogoutAccount" class="btn btn-outline" style="width:100%; color: #ef4444; border-color: #ef4444;">
+              Cerrar Sesion
+            </button>
+          </div>
+
+          <!-- Cambiar contrasena -->
+          <div class="card glass">
+            <div class="card-header">
+              <h2>Cambiar Contrasena</h2>
+              <span class="tag">Seguridad</span>
+            </div>
+
+            <div id="pwdMsg" style="display:none; padding: 10px 14px; border-radius: 8px; font-size:0.85rem; margin-bottom: 16px;"></div>
+
+            <form id="formChangePassword">
+              <div class="form-group">
+                <label for="pwdActual">Contrasena Actual</label>
+                <input type="password" id="pwdActual" class="input-text" placeholder="Ingresa tu contrasena actual" required>
+              </div>
+              <div class="form-group">
+                <label for="pwdNueva">Nueva Contrasena</label>
+                <input type="password" id="pwdNueva" class="input-text" placeholder="Minimo 8 caracteres" required>
+              </div>
+              <div class="form-group">
+                <label for="pwdConfirmar">Confirmar Nueva Contrasena</label>
+                <input type="password" id="pwdConfirmar" class="input-text" placeholder="Repite la nueva contrasena" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="btnCambiarPwd">
+                Actualizar Contrasena
+              </button>
+            </form>
+
+            <hr class="divider" style="margin-top: 24px;">
+            <p style="font-size:0.78rem; color: var(--text-muted); line-height: 1.6;">
+              <strong style="color:var(--text-color);">Recomendaciones de seguridad:</strong><br>
+              Usa al menos 8 caracteres combinando letras, numeros y simbolos.<br>
+              No compartas tu contrasena con nadie.
+            </p>
+          </div>
+
         </div>
       </section>
 

@@ -157,6 +157,7 @@ function initTabs() {
 
       if (targetTab === 'ledger') fetchLedger();
       else if (targetTab === 'db-invoices') fetchDbInvoices();
+      else if (targetTab === 'mi-cuenta') initAccountTab();
     });
   });
 
@@ -319,6 +320,99 @@ function renderResult(result, idDocumento) {
   const jsonInspector = document.getElementById('jsonInspectorCode');
   if (jsonInspector) {
     jsonInspector.innerText = JSON.stringify(result.sriResponse.data?.payloadEnviado || result.sriResponse, null, 2);
+  }
+}
+
+// ============================================================================
+// MI CUENTA — Perfil y Cambio de Contrasena
+// ============================================================================
+function initAccountTab() {
+  // Cargar datos del perfil desde el token en localStorage
+  if (USER) {
+    document.getElementById('profileUsuario').innerText  = USER.usuario || '-';
+    document.getElementById('profileNombre').innerText   = USER.nombre || '-';
+    document.getElementById('profileEmail').innerText    = USER.email || '-';
+    document.getElementById('profileEmpresa').innerText  = USER.empresaNombre || '-';
+    document.getElementById('profileRuc').innerText      = USER.empresaRuc || '-';
+  }
+
+  // Boton logout desde la tab Mi Cuenta
+  document.getElementById('btnLogoutAccount')?.addEventListener('click', () => {
+    if (confirm('Cerrar sesion? Necesitaras ingresar tus credenciales nuevamente.')) {
+      localStorage.removeItem('puntito_token');
+      localStorage.removeItem('puntito_user');
+      window.location.href = '/login.html';
+    }
+  });
+
+  // Formulario de cambio de contrasena
+  const form = document.getElementById('formChangePassword');
+  if (form && !form.dataset.initialized) {
+    form.dataset.initialized = 'true';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const pwdActual   = document.getElementById('pwdActual').value;
+      const pwdNueva    = document.getElementById('pwdNueva').value;
+      const pwdConfirmar = document.getElementById('pwdConfirmar').value;
+      const msgEl       = document.getElementById('pwdMsg');
+      const btn         = document.getElementById('btnCambiarPwd');
+
+      // Validacion local
+      if (pwdNueva !== pwdConfirmar) {
+        showPwdMsg('Las contrasenas nuevas no coinciden.', 'error');
+        return;
+      }
+      if (pwdNueva.length < 8) {
+        showPwdMsg('La nueva contrasena debe tener al menos 8 caracteres.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Actualizando...';
+
+      try {
+        const res = await authFetch('/api/auth/change-password', {
+          method: 'POST',
+          body: JSON.stringify({ passwordActual: pwdActual, passwordNueva: pwdNueva })
+        });
+        if (!res) return;
+        const data = await res.json();
+
+        if (data.success) {
+          showPwdMsg('Contrasena actualizada exitosamente. Vuelve a iniciar sesion con la nueva contrasena.', 'success');
+          form.reset();
+          // Redirigir al login despues de 2.5 segundos (token ya no valido con nueva pwd)
+          setTimeout(() => {
+            localStorage.removeItem('puntito_token');
+            localStorage.removeItem('puntito_user');
+            window.location.href = '/login.html';
+          }, 2500);
+        } else {
+          showPwdMsg(data.error || 'Error al actualizar la contrasena.', 'error');
+        }
+      } catch (err) {
+        showPwdMsg('Error de conexion: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Actualizar Contrasena';
+      }
+    });
+  }
+}
+
+function showPwdMsg(text, type) {
+  const el = document.getElementById('pwdMsg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerText = text;
+  if (type === 'success') {
+    el.style.background = 'rgba(34,197,94,0.12)';
+    el.style.border = '1px solid rgba(34,197,94,0.4)';
+    el.style.color = '#86efac';
+  } else {
+    el.style.background = 'rgba(239,68,68,0.12)';
+    el.style.border = '1px solid rgba(239,68,68,0.35)';
+    el.style.color = '#fca5a5';
   }
 }
 
