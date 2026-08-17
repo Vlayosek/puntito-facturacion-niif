@@ -19,14 +19,14 @@ const pool = new pg.Pool({
 async function runMigrations() {
   const client = await pool.connect();
   try {
-    console.log('✔ Conectado a PostgreSQL\n');
+    console.log('[OK] Conectado a PostgreSQL\n');
 
     const migrationsDir = path.join(__dirname, '..', 'database', 'migrations');
     const files = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
 
-    console.log(`📋 Encontradas ${files.length} migraciones:`);
+    console.log(`Encontradas ${files.length} migraciones:`);
     files.forEach(f => console.log(`   - ${f}`));
     console.log();
 
@@ -36,16 +36,16 @@ async function runMigrations() {
       
       try {
         await client.query(sql);
-        console.log(`✔ ${file} ejecutado correctamente`);
+        console.log(`  [OK] ${file} ejecutado correctamente`);
       } catch (err) {
-        console.error(`❌ Error en ${file}:`, err.message);
+        console.error(`  [ERROR] Error en ${file}:`, err.message);
       }
     }
 
-    console.log('\n✅ Todas las migraciones completadas.');
+    console.log('\n[OK] Todas las migraciones completadas.');
     
   } catch (err) {
-    console.error('❌ Error fatal:', err.message);
+    console.error('[ERROR] Error fatal:', err.message);
     process.exit(1);
   } finally {
     client.release();

@@ -6,11 +6,11 @@ Plataforma SaaS Multi-tenant modular diseñada para el mercado ecuatoriano. Comb
 
 ## Características Principales
 
-* **Arquitectura Desacoplada:** El núcleo tributario y contable se mantiene independiente de los módulos operativos de negocio.
-* **Integración API AutorizadorEC:** Firma digital XAdES-BES, generación de XML, envío al SRI y recepción de RIDE (PDF) en tiempo real mediante API REST.
-* **Cálculo Tributario SRI Automático:** Soporte para IVA 15% (vigente), IVA 0% (Salud/Educación), y leyendas legales obligatorias SRI (**RIMPE Popular**, **RIMPE Emprendedor**, **Régimen General**).
-* **Partida Doble NIIF:** Generación automática de asientos contables (*Debe = Haber*) al autorizar comprobantes.
-* **Base de Datos PostgreSQL (v15+):** Esquemas aislados `puntito` (Core SaaS), `facturacion` (Tributación) y `contabilidad` (NIIF), con soporte para campos `JSONB`.
+- **Arquitectura Desacoplada:** El núcleo tributario y contable se mantiene independiente de los módulos operativos de negocio.
+- **Integración API AutorizadorEC:** Firma digital XAdES-BES, generación de XML, envío al SRI y recepción de RIDE (PDF) en tiempo real mediante API REST.
+- **Cálculo Tributario SRI Automático:** Soporte para IVA 15% (vigente), IVA 0% (Salud/Educación), y leyendas legales obligatorias SRI (**RIMPE Popular**, **RIMPE Emprendedor**, **Régimen General**).
+- **Partida Doble NIIF:** Generación automática de asientos contables (_Debe = Haber_) al autorizar comprobantes.
+- **Base de Datos PostgreSQL (v15+):** Esquemas aislados `puntito` (Core SaaS), `facturacion` (Tributación) y `contabilidad` (NIIF), con soporte para campos `JSONB`.
 
 ---
 
@@ -45,18 +45,21 @@ Plataforma SaaS Multi-tenant modular diseñada para el mercado ecuatoriano. Comb
 ## Instalación y Uso Local
 
 ### 1. Requisitos Previos
-* **Node.js** (v18+) - [Descargar](https://nodejs.org)
-* **PostgreSQL** (v15+) - [Descargar](https://www.postgresql.org/download/)
+
+- **Node.js** (v18+) - [Descargar](https://nodejs.org)
+- **PostgreSQL** (v15+) - [Descargar](https://www.postgresql.org/download/)
   - Debe estar ejecutándose en `localhost:5432`
   - Usuario por defecto: `postgres` / `postgres`
 
 **Verificar instalación:**
+
 ```bash
 node --version      # Debe ser v18 o superior
 npm --version
 ```
 
 ### 2. Clonar/Descargar el Proyecto
+
 ```bash
 cd tu-carpeta-de-proyectos
 # Clona o descomprime el proyecto aquí
@@ -64,11 +67,13 @@ cd puntito-facturacion-niif
 ```
 
 ### 3. Instalar Dependencias Node.js
+
 ```bash
 npm install
 ```
 
 ### 4. Configurar Variables de Entorno
+
 Crea o verifica el archivo `.env` en la raíz del proyecto:
 
 ```env
@@ -98,9 +103,11 @@ Puedes inicializar la base de datos completa (creación de base de datos, esquem
 ```bash
 npm run db:setup
 ```
-*(O de forma equivalente: `node scripts/setup_postgres.js`)*
+
+_(O de forma equivalente: `node scripts/setup_postgres.js`)_
 
 **¿Qué hace este comando automáticamente?**
+
 1. Crea la base de datos `puntitodb` y los esquemas (`puntito`, `facturacion`, `contabilidad`).
 2. Crea todas las tablas base e inserta el cliente demo (`CLI-001`), usuario admin (`admin`) y el Plan de Cuentas NIIF.
 3. Aplica automáticamente todas las migraciones en `database/migrations/` (incluyendo la columna `direccion` y catálogos SRI de la Ficha Técnica v2.34).
@@ -109,42 +116,50 @@ npm run db:setup
 ---
 
 ### 6. Verificar Estado de la Base de Datos (Opcional en cualquier momento)
+
 ```bash
 npm run db:verify
 ```
+
 Deberías ver:
-- ✅ 1 Cliente (`CLI-001`)
-- ✅ 1 Usuario (`admin`)
-- ✅ 4 Módulos contratados
-- ✅ 13 Cuentas Contables NIIF
-- ✅ Catálogos SRI completos (Ambientes, Formas de Pago, Tarifas IVA)
+
+- 1 Cliente (`CLI-001`)
+- 1 Usuario (`admin`)
+- 4 Módulos contratados
+- 13 Cuentas Contables NIIF
+- Catálogos SRI completos (Ambientes, Formas de Pago, Tarifas IVA)
 
 ### 7. Iniciar el Servidor y Dashboard Web
+
 ```bash
 npm start
 ```
 
 **Resultado esperado:**
+
 ```
 Server running on port 3000
-✔ Conectado a la base de datos
+Conectado a la base de datos
 ```
 
 Abre tu navegador en: **`http://localhost:3000`**
 
 ### 8. Credenciales de Acceso
+
 Use estas credenciales en la interfaz de login:
 
-| Campo | Valor |
-|-------|-------|
-| **Usuario** | `admin` |
-| **Contraseña** | `Admin2026!` |
-| **Empresa** | TIENDA DEMO S.A. (RUC: 0190123456789) |
+| Campo          | Valor                                 |
+| -------------- | ------------------------------------- |
+| **Usuario**    | `admin`                               |
+| **Contraseña** | `Admin2026!`                          |
+| **Empresa**    | TIENDA DEMO S.A. (RUC: 0190123456789) |
 
 ---
 
 ## Modo Desarrollo (con reinicio automático)
+
 Para desarrollo con recarga automática en cambios:
+
 ```bash
 npm run dev
 ```
@@ -153,23 +168,27 @@ npm run dev
 
 ## Solución de Problemas
 
-### ❌ Error: "cannot connect to PostgreSQL"
+### Error: "cannot connect to PostgreSQL"
+
 - Verifica que PostgreSQL esté ejecutándose
 - Confirma credenciales en `.env` (usuario/contraseña)
 - En Windows: revisa el servicio PostgreSQL en Servicios
 
-### ❌ Error: "base de datos 'puntitodb' no existe"
-- Ejecuta: `node scripts/setup_postgres.js`
+### Error: "base de datos 'puntitodb' no existe"
 
-### ❌ Error: "usuario admin no existe"
-- Ejecuta: `node scripts/run_all_migrations.js`
+- Ejecuta: `npm run db:setup`
 
-### ❌ Error: "columna 'direccion' no existe"
-- Las migraciones no se ejecutaron
-- Ejecuta nuevamente: `node scripts/run_all_migrations.js`
+### Error: "usuario admin no existe"
 
-### ❌ Login fallido con admin/Admin2026!
-1. Verifica que el usuario existe: `node scripts/verify_database.js`
+- Ejecuta: `npm run db:setup`
+
+### Error: "columna 'direccion' no existe"
+
+- Ejecuta: `npm run db:setup`
+
+### Login fallido con admin/Admin2026!
+
+1. Verifica que el usuario existe: `npm run db:verify`
 2. Reinicia el servidor: `npm start`
 3. Limpia cookies del navegador y reinicia
 
@@ -178,6 +197,7 @@ npm run dev
 ## Endpoint Universal de Integración
 
 Para integrar cualquier sistema externo (Dentistas, Veterinarias, POS, E-commerce):
+
 ```http
 POST /api/v1/invoices/emit
 Content-Type: application/json
@@ -204,4 +224,5 @@ Content-Type: application/json
 ---
 
 ## Licencia
-Desarrollado para el mercado tributario y contable de Ecuador.
+
+Desarrollado por Vladimir Kozisck
