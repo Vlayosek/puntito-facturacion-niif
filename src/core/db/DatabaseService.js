@@ -321,7 +321,7 @@ export class DatabaseService {
   static async getInvoiceByClave(claveAcceso) {
     const resDoc = await pool.query(
       `SELECT d.*, 
-              c.razon_social as comprador_nombre, c.identificacion as comprador_id, c.email as comprador_email,
+              c.razon_social as comprador_nombre, c.identificacion as comprador_id, c.email as comprador_email, c.direccion as comprador_direccion,
               e.razon_social as emisor_razon, e.nombre_comercial as emisor_nombre_comercial, e.ruc as emisor_ruc,
               e.direccion_matriz as emisor_direccion, e.regimen_sri as emisor_regimen, e.obligado_contabilidad as emisor_obligado
        FROM facturacion.tbt_documento d

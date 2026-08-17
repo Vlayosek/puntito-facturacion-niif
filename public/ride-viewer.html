@@ -170,10 +170,12 @@
           document.getElementById('rFechaAutorizacion').innerText = inv.fecha_autorizacion ? new Date(inv.fecha_autorizacion).toLocaleString('es-EC') : new Date(inv.fecha_emision).toLocaleDateString('es-EC');
 
           // Comprador dinámico
-          document.getElementById('rClienteNombre').innerText = inv.comprador_nombre || 'CONSUMIDOR FINAL';
-          document.getElementById('rClienteId').innerText = inv.comprador_id || '9999999999999';
+          const comprador = payload.comprobante?.comprador || {};
+          document.getElementById('rClienteNombre').innerText = comprador.razonSocial || inv.comprador_nombre || 'CONSUMIDOR FINAL';
+          document.getElementById('rClienteId').innerText = comprador.identificacion || inv.comprador_id || '9999999999999';
+          document.getElementById('rClienteDir').innerText = comprador.direccion || inv.comprador_direccion || 'Ecuador';
           document.getElementById('rFechaEmision').innerText = inv.fecha_emision ? new Date(inv.fecha_emision).toLocaleDateString('es-EC') : new Date().toLocaleDateString('es-EC');
-          document.getElementById('rClienteEmail').innerText = inv.comprador_email || 'cliente@ejemplo.ec';
+          document.getElementById('rClienteEmail').innerText = comprador.email || inv.comprador_email || 'cliente@ejemplo.ec';
 
           // Totales dinámicos desde la BD o payload
           const sub15 = Number(totales.subtotal15 !== undefined ? totales.subtotal15 : (inv.total_iva > 0 ? (inv.importe_total - inv.total_iva) : 0)).toFixed(2);
