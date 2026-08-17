@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "db:setup": "node scripts/setup_postgres.js && node scripts/verify_database.js",
+    "db:verify": "node scripts/verify_database.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

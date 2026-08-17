@@ -91,30 +91,33 @@ AUTORIZADOR_EC_ENV=TEST
 JWT_SECRET=tu_secreto_super_seguro_aqui
 ```
 
-### 5. Inicializar la Base de Datos PostgreSQL (IMPORTANTE - Pasos en Orden)
+### 5. Inicializar la Base de Datos PostgreSQL
 
-**Paso 5a:** Crear la base de datos y esquemas
+Puedes inicializar la base de datos completa (creación de base de datos, esquemas, tablas, catálogos SRI completos y usuario administrador) con **un solo comando**:
+
 ```bash
-node scripts/setup_postgres.js
+npm run db:setup
 ```
-*Espera a que termine. Verás: "Estructura de Base de Datos PostgreSQL inicializada con éxito"*
+*(O de forma equivalente: `node scripts/setup_postgres.js`)*
 
-**Paso 5b:** Ejecutar migraciones (catálogos SRI + usuario admin)
-```bash
-node scripts/run_all_migrations.js
-```
-*Verás dos migraciones ejecutadas correctamente*
+**¿Qué hace este comando automáticamente?**
+1. Crea la base de datos `puntitodb` y los esquemas (`puntito`, `facturacion`, `contabilidad`).
+2. Crea todas las tablas base e inserta el cliente demo (`CLI-001`), usuario admin (`admin`) y el Plan de Cuentas NIIF.
+3. Aplica automáticamente todas las migraciones en `database/migrations/` (incluyendo la columna `direccion` y catálogos SRI de la Ficha Técnica v2.34).
+4. Ejecuta la verificación final mostrando el resumen de registros en consola.
 
-### 6. Verificar que la Base de Datos está Poblada
+---
+
+### 6. Verificar Estado de la Base de Datos (Opcional en cualquier momento)
 ```bash
-node scripts/verify_database.js
+npm run db:verify
 ```
 Deberías ver:
-- ✅ 1 Cliente
-- ✅ 1 Usuario (admin)
-- ✅ 3+ Módulos
-- ✅ 13 Cuentas Contables
-- ✅ Catálogos SRI completos
+- ✅ 1 Cliente (`CLI-001`)
+- ✅ 1 Usuario (`admin`)
+- ✅ 4 Módulos contratados
+- ✅ 13 Cuentas Contables NIIF
+- ✅ Catálogos SRI completos (Ambientes, Formas de Pago, Tarifas IVA)
 
 ### 7. Iniciar el Servidor y Dashboard Web
 ```bash

@@ -39,9 +39,30 @@ async function setupDatabase() {
     const sqlPath = path.join(__dirname, '..', 'database', 'init_postgres.sql');
     const sqlContent = fs.readFileSync(sqlPath, 'utf-8');
 
-    console.log("Ejecutando script de migración 'database/init_postgres.sql'...");
+    console.log("Ejecutando script base 'database/init_postgres.sql'...");
     await puntitoClient.query(sqlContent);
-    console.log("Estructura de Base de Datos PostgreSQL (puntito, facturacion, contabilidad) inicializada con éxito.");
+    console.log("✔ Estructura base de PostgreSQL (puntito, facturacion, contabilidad) inicializada con éxito.");
+
+    // Aplicar automáticamente las migraciones incrementales
+    const migrationsDir = path.join(__dirname, '..', 'database', 'migrations');
+    if (fs.existsSync(migrationsDir)) {
+      const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+      if (files.length > 0) {
+        console.log(`\nAplicando ${files.length} migraciones incrementales...`);
+        for (const file of files) {
+          const migrationPath = path.join(migrationsDir, file);
+          const migrationSql = fs.readFileSync(migrationPath, 'utf-8');
+          try {
+            await puntitoClient.query(migrationSql);
+            console.log(`  ✔ Migración ${file} aplicada correctamente.`);
+          } catch (mErr) {
+            console.error(`  ❌ Error en migración ${file}:`, mErr.message);
+          }
+        }
+      }
+    }
+
+    console.log("\n✅ Configuración completa de la Base de Datos finalizada exitosamente.");
 
     await puntitoClient.end();
   } catch (error) {

@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS facturacion.tbm_cliente (
     identificacion           VARCHAR(20) NOT NULL,
     razon_social             VARCHAR(300) NOT NULL,
     nombre_comercial         VARCHAR(300),
+    direccion                VARCHAR(300),
     email                    VARCHAR(300),
     telefono                 VARCHAR(50),
     estado                   BOOLEAN NOT NULL DEFAULT TRUE,
@@ -378,24 +379,34 @@ INSERT INTO facturacion.tbc_impuesto (codigo, descripcion) VALUES
 INSERT INTO facturacion.tbc_tarifa_iva (codigo_porcentaje, descripcion, porcentaje) VALUES
 ('0', 'IVA 0%', 0),
 ('2', 'IVA 12%', 12),
+('3', 'IVA 14%', 14),
 ('4', 'IVA 15%', 15),
 ('5', 'IVA 5%', 5),
 ('6', 'NO OBJETO DE IMPUESTO', NULL),
-('7', 'EXENTO DE IVA', NULL)
-ON CONFLICT DO NOTHING;
+('7', 'EXENTO DE IVA', NULL),
+('8', 'IVA DIFERENCIADO', NULL)
+ON CONFLICT (codigo_porcentaje) DO UPDATE SET 
+    descripcion = EXCLUDED.descripcion,
+    porcentaje = EXCLUDED.porcentaje;
 
 INSERT INTO facturacion.tbc_forma_pago (codigo, descripcion) VALUES
-('01', 'SIN UTILIZACIÓN DEL SISTEMA FINANCIERO (EFECTIVO)'),
-('16', 'TARJETA DE DÉBITO'),
-('19', 'TARJETA DE CRÉDITO'),
-('20', 'OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO (TRANSFERENCIA)')
-ON CONFLICT DO NOTHING;
+('01', 'SIN UTILIZACION DEL SISTEMA FINANCIERO (EFECTIVO)'),
+('15', 'COMPENSACION DE DEUDAS'),
+('16', 'TARJETA DE DEBITO'),
+('17', 'DINERO ELECTRONICO'),
+('18', 'TARJETA PREPAGO'),
+('19', 'TARJETA DE CREDITO'),
+('20', 'OTROS CON UTILIZACION DEL SISTEMA FINANCIERO'),
+('21', 'ENDOSO DE TITULOS'),
+('22', 'TRANSFERENCIA BANCARIA')
+ON CONFLICT (codigo) DO UPDATE SET descripcion = EXCLUDED.descripcion;
 
 INSERT INTO puntito.tbm_modulo (codigo, descripcion) VALUES
-('FE', 'Facturación Electrónica SRI'),
-('MED', 'Consultorio Médico'),
-('POS', 'Punto de Venta / Tienda')
-ON CONFLICT DO NOTHING;
+('FE',    'Facturacion Electronica SRI'),
+('MED',   'Consultorio Medico / Odontologia'),
+('POS',   'Punto de Venta / Tienda'),
+('ADMIN', 'Administracion del Sistema')
+ON CONFLICT (codigo) DO UPDATE SET descripcion = EXCLUDED.descripcion;
 
 -- ================================================================================
 -- 9. DATOS DE PRUEBA - CLIENTE Y USUARIO
