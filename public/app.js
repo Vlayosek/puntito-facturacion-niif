@@ -209,11 +209,13 @@ function switchToTab(tabName) {
 // EMISION MEDICA
 // ============================================================================
 async function emitMedicalInvoice() {
-  const regimen      = document.getElementById('tenantRegimen').value;
-  const patientName  = document.getElementById('medPatientName').value.trim() || 'CONSUMIDOR FINAL';
-  const patientId    = document.getElementById('medPatientId').value.trim() || '9999999999999';
-  const specialty    = document.getElementById('medSpecialty').value.trim() || 'Consulta Médica General';
-  const fee          = parseFloat(document.getElementById('medFee').value) || 50;
+  const regimen       = document.getElementById('tenantRegimen').value;
+  const patientName   = document.getElementById('medPatientName').value.trim() || 'CONSUMIDOR FINAL';
+  const patientId     = document.getElementById('medPatientId').value.trim() || '9999999999999';
+  const patientEmail  = document.getElementById('medPatientEmail').value.trim() || 'paciente@ejemplo.ec';
+  const patientDir    = document.getElementById('medPatientDir').value.trim() || 'Ecuador';
+  const specialty     = document.getElementById('medSpecialty').value.trim() || 'Consulta Médica General';
+  const fee           = parseFloat(document.getElementById('medFee').value) || 50;
   const paymentMethod = document.getElementById('medPaymentMethod').value;
 
   const payload = {
@@ -221,13 +223,17 @@ async function emitMedicalInvoice() {
     patient: {
       identificacion: patientId,
       nombreCompleto: patientName,
-      email: 'paciente@ejemplo.ec'
+      email: patientEmail,
+      direccion: patientDir
     },
     consultationDetails: { especialidad: specialty, honorario: fee },
     paymentMethod
   };
 
-  await sendInvoiceRequest('/api/modules/medical/emit-invoice', payload);
+  const success = await sendInvoiceRequest('/api/modules/medical/emit-invoice', payload);
+  if (success) {
+    document.getElementById('formMedical').reset();
+  }
 }
 
 // ============================================================================
@@ -237,11 +243,18 @@ async function emitRetailInvoice() {
   const regimen       = document.getElementById('tenantRegimen').value;
   const customerName  = document.getElementById('retailCustomerName').value.trim() || 'CONSUMIDOR FINAL';
   const customerId    = document.getElementById('retailCustomerId').value.trim() || '9999999999999';
+  const customerEmail = document.getElementById('retailCustomerEmail').value.trim() || 'cliente@empresa.ec';
+  const customerDir   = document.getElementById('retailCustomerDir').value.trim() || 'Ecuador';
   const paymentMethod = document.getElementById('retailPaymentMethod').value;
 
   const payload = {
     tenantConfig: { regimenSRI: regimen },
-    customerData: { identificacion: customerId, razonSocial: customerName, email: 'compras@empresa.ec' },
+    customerData: {
+      identificacion: customerId,
+      razonSocial: customerName,
+      email: customerEmail,
+      direccion: customerDir
+    },
     cartItems: [
       { sku: 'MON-24', nombre: 'Monitor LED 24"', cantidad: 2, precioUnitario: 120.00, aplicaIva15: true },
       { sku: 'CAB-HDMI', nombre: 'Cable HDMI Alta Velocidad', cantidad: 1, precioUnitario: 15.00, aplicaIva15: true }
@@ -249,7 +262,10 @@ async function emitRetailInvoice() {
     paymentMethod
   };
 
-  await sendInvoiceRequest('/api/modules/retail/emit-invoice', payload);
+  const success = await sendInvoiceRequest('/api/modules/retail/emit-invoice', payload);
+  if (success) {
+    document.getElementById('formRetail').reset();
+  }
 }
 
 // ============================================================================
@@ -262,25 +278,27 @@ async function sendInvoiceRequest(url, payload) {
 
   try {
     const res = await authFetch(url, { method: 'POST', body: JSON.stringify(payload) });
-    if (!res) return;
+    if (!res) return false;
 
     const data = await res.json();
     if (data.success) {
       lastOperationResult = data.result;
       renderResult(data.result, data.idDocumento);
+      return true;
     } else {
-      // Mostrar error especifico si falta la API Key
       const msg = data.code === 'NO_API_KEY'
         ? 'Sin API Key configurada. Ve a la seccion de Configuracion (icono superior) y agrega tu API Key de AutorizadorEC.'
         : 'Error en la emision: ' + data.error;
       alert(msg);
       statusBadge.className = 'status-pill status-idle';
       statusBadge.innerText = 'Error en emision';
+      return false;
     }
   } catch (err) {
     alert('Error al conectar con el servidor: ' + err.message);
     statusBadge.className = 'status-pill status-idle';
     statusBadge.innerText = 'Error de conexion';
+    return false;
   }
 }
 

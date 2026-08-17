@@ -306,7 +306,12 @@ app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
 app.post('/api/modules/medical/emit-invoice', authenticate, async (req, res) => {
   req.body = {
     tenantConfig: req.body.tenantConfig,
-    comprador: { identificacion: req.body.patient?.identificacion, nombre: req.body.patient?.nombreCompleto, email: req.body.patient?.email },
+    comprador: {
+      identificacion: req.body.patient?.identificacion,
+      nombre: req.body.patient?.nombreCompleto,
+      email: req.body.patient?.email,
+      direccion: req.body.patient?.direccion
+    },
     items: [{ codigo: 'MED-001', descripcion: `Consulta Medica: ${req.body.consultationDetails?.especialidad || 'General'}`, cantidad: 1, precioUnitario: req.body.consultationDetails?.honorario || 50, aplicaIva15: false }],
     formaPago: req.body.paymentMethod
   };
@@ -317,7 +322,12 @@ app.post('/api/modules/medical/emit-invoice', authenticate, async (req, res) => 
 app.post('/api/modules/retail/emit-invoice', authenticate, async (req, res) => {
   req.body = {
     tenantConfig: req.body.tenantConfig,
-    comprador: { identificacion: req.body.customerData?.identificacion, nombre: req.body.customerData?.razonSocial, email: req.body.customerData?.email },
+    comprador: {
+      identificacion: req.body.customerData?.identificacion,
+      nombre: req.body.customerData?.razonSocial,
+      email: req.body.customerData?.email,
+      direccion: req.body.customerData?.direccion
+    },
     items: req.body.cartItems,
     formaPago: req.body.paymentMethod
   };
