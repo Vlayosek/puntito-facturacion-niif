@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initApiKeyConfig();
   loadConfigStatus();
   loadChartOfAccounts();
+  loadCatalogs();
 });
 
 function renderUserInfo() {
@@ -397,6 +398,134 @@ function initAccountTab() {
         btn.innerText = 'Actualizar Contrasena';
       }
     });
+  }
+
+  // Cargar lista de usuarios de la empresa
+  fetchCompanyUsers();
+
+  // Boton recargar usuarios
+  const btnRefreshUsers = document.getElementById('btnRefreshUsers');
+  if (btnRefreshUsers && !btnRefreshUsers.dataset.initialized) {
+    btnRefreshUsers.dataset.initialized = 'true';
+    btnRefreshUsers.addEventListener('click', fetchCompanyUsers);
+  }
+
+  // Formulario de registro de usuario
+  const regForm = document.getElementById('formRegisterUser');
+  if (regForm && !regForm.dataset.initialized) {
+    regForm.dataset.initialized = 'true';
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const usuario  = document.getElementById('regUsuario').value.trim();
+      const nombre   = document.getElementById('regNombre').value.trim();
+      const email    = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const btn      = document.getElementById('btnRegisterUser');
+
+      btn.disabled = true;
+      btn.innerText = 'Creando...';
+
+      try {
+        const res = await authFetch('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify({ usuario, nombre, email, password })
+        });
+        if (!res) return;
+        const data = await res.json();
+
+        if (data.success) {
+          showRegUserMsg('Usuario "' + usuario + '" creado exitosamente.', 'success');
+          regForm.reset();
+          fetchCompanyUsers();
+        } else {
+          showRegUserMsg(data.error || 'Error al registrar usuario.', 'error');
+        }
+      } catch (err) {
+        showRegUserMsg('Error de conexion: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Crear Usuario';
+      }
+    });
+  }
+}
+
+async function fetchCompanyUsers() {
+  const tbody = document.getElementById('companyUsersTable');
+  if (!tbody) return;
+
+  try {
+    const res = await authFetch('/api/auth/users');
+    if (!res) return;
+    const data = await res.json();
+
+    if (!data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">No hay otros usuarios registrados en tu empresa.</td></tr>';
+      return;
+    }
+
+    let html = '';
+    data.data.forEach(u => {
+      const estadoTag = u.estado
+        ? '<span class="tag tag-success">Activo</span>'
+        : '<span class="tag" style="background:#6b7280">Inactivo</span>';
+
+      html += `
+        <tr>
+          <td><code>${u.usuario}</code></td>
+          <td><strong>${u.nombre}</strong></td>
+          <td><small class="text-muted">${u.email || '-'}</small></td>
+          <td>${estadoTag}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="4" style="color:red">Error al cargar usuarios: ${err.message}</td></tr>`;
+  }
+}
+
+function showRegUserMsg(text, type) {
+  const el = document.getElementById('regUserMsg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerText = text;
+  if (type === 'success') {
+    el.style.background = 'rgba(34,197,94,0.12)';
+    el.style.border = '1px solid rgba(34,197,94,0.4)';
+    el.style.color = '#86efac';
+  } else {
+    el.style.background = 'rgba(239,68,68,0.12)';
+    el.style.border = '1px solid rgba(239,68,68,0.35)';
+    el.style.color = '#fca5a5';
+  }
+}
+
+// ============================================================================
+// CARGA DINAMICA DE CATALOGOS SRI DESDE LA BD (/api/catalogs)
+// ============================================================================
+async function loadCatalogs() {
+  try {
+    const res = await fetch('/api/catalogs');
+    const data = await res.json();
+    if (!data.success || !data.data) return;
+
+    const { formasPago } = data.data;
+
+    if (formasPago && formasPago.length > 0) {
+      const medSelect = document.getElementById('medPaymentMethod');
+      const retSelect = document.getElementById('retailPaymentMethod');
+
+      let optionsHtml = '';
+      formasPago.forEach(fp => {
+        optionsHtml += `<option value="${fp.codigo}">${fp.codigo} - ${fp.descripcion}</option>`;
+      });
+
+      if (medSelect) medSelect.innerHTML = optionsHtml;
+      if (retSelect) retSelect.innerHTML = optionsHtml;
+    }
+  } catch (err) {
+    console.warn('No se pudieron cargar catalogos dinamicos, usando defaults HTML:', err);
   }
 }
 

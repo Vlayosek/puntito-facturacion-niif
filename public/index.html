@@ -430,6 +430,64 @@
           </div>
 
         </div>
+
+        <!-- SECCION: GESTION DE USUARIOS DE LA EMPRESA -->
+        <div class="card glass" style="margin-top: 24px;">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <h2>Usuarios de la Empresa</h2>
+              <p class="subtitle" style="margin:0;">Administra los usuarios que tienen acceso a tu empresa en Puntito SaaS.</p>
+            </div>
+            <button id="btnRefreshUsers" class="btn btn-outline" style="font-size:0.8rem;">Recargar Lista</button>
+          </div>
+
+          <div class="grid-2col" style="margin-top: 16px;">
+            <!-- Tabla de Usuarios -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="companyUsersTable">
+                  <tr><td colspan="4" class="text-muted">Cargando usuarios...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Formulario para Registrar Nuevo Usuario -->
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
+              <h3 style="font-size: 1rem; margin-bottom: 12px;">+ Registrar Nuevo Usuario</h3>
+              <div id="regUserMsg" style="display:none; padding: 8px 12px; border-radius: 6px; font-size:0.8rem; margin-bottom: 12px;"></div>
+
+              <form id="formRegisterUser">
+                <div class="form-group">
+                  <label for="regUsuario">Usuario (Username)</label>
+                  <input type="text" id="regUsuario" class="input-text" placeholder="Ej: cajiere01" required>
+                </div>
+                <div class="form-group">
+                  <label for="regNombre">Nombre Completo</label>
+                  <input type="text" id="regNombre" class="input-text" placeholder="Ej: Juan Pérez" required>
+                </div>
+                <div class="form-group">
+                  <label for="regEmail">Correo Electrónico</label>
+                  <input type="email" id="regEmail" class="input-text" placeholder="juan@empresa.ec">
+                </div>
+                <div class="form-group">
+                  <label for="regPassword">Contraseña Inicial</label>
+                  <input type="password" id="regPassword" class="input-text" placeholder="Mínimo 8 caracteres" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btnRegisterUser">
+                  Crear Usuario
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
       </section>
 
     </main>
