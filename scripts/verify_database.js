@@ -37,6 +37,10 @@ async function verifyDatabase() {
     // Verificar módulos
     const modulosRes = await client.query('SELECT COUNT(*) as total FROM puntito.tbm_modulo');
     console.log(`\n📦 Módulos: ${modulosRes.rows[0].total}`);
+    const moduloDetails = await client.query('SELECT codigo, descripcion FROM puntito.tbm_modulo ORDER BY id_modulo');
+    moduloDetails.rows.forEach(row => {
+      console.log(`   - [${row.codigo}] ${row.descripcion}`);
+    });
 
     // Verificar emisores
     const emisoresRes = await client.query('SELECT COUNT(*) as total FROM facturacion.tbm_emisor');
