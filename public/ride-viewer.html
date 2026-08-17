@@ -58,37 +58,37 @@
     <div class="grid-header">
       <!-- Emisor -->
       <div class="box-border">
-        <div class="emisor-title" id="rEmisorRazon">CONSULTORIO MEDICO DR. PEREZ C.LTDA.</div>
+        <div class="emisor-title" id="rEmisorRazon">Cargando Emisor...</div>
         <div class="emisor-info">
-          <p><strong>Nombre Comercial:</strong> <span id="rEmisorNombreCom">Centro Médico Especializado</span></p>
-          <p><strong>Matriz:</strong> <span id="rEmisorMatriz">Av. Amazonas N24-15 y Colón, Quito</span></p>
-          <p><strong>Establecimiento:</strong> <span id="rEmisorEstab">001-002</span></p>
-          <p><strong>Obligado a Llevar Contabilidad:</strong> <span id="rEmisorContabilidad">SI</span></p>
-          <p id="rEmisorRegimenContainer"><strong>Régimen:</strong> <span id="rEmisorRegimen">Régimen General</span></p>
+          <p><strong>Nombre Comercial:</strong> <span id="rEmisorNombreCom">-</span></p>
+          <p><strong>Matriz:</strong> <span id="rEmisorMatriz">-</span></p>
+          <p><strong>Establecimiento:</strong> <span id="rEmisorEstab">-</span></p>
+          <p><strong>Obligado a Llevar Contabilidad:</strong> <span id="rEmisorContabilidad">-</span></p>
+          <p id="rEmisorRegimenContainer"><strong>Régimen:</strong> <span id="rEmisorRegimen">-</span></p>
         </div>
       </div>
 
       <!-- SRI Info Box -->
       <div class="box-border sri-box">
-        <p><strong>R.U.C.:</strong> <span id="rEmisorRuc">1792123456001</span></p>
+        <p><strong>R.U.C.:</strong> <span id="rEmisorRuc">-</span></p>
         <p style="font-size: 1.1rem; color: #1e3a8a; font-weight: bold; margin: 4px 0;">FACTURA</p>
-        <p><strong>No.:</strong> <span id="rSecuencial">001-002-000000001</span></p>
+        <p><strong>No.:</strong> <span id="rSecuencial">-</span></p>
         <p><strong>NÚMERO DE AUTORIZACIÓN:</strong></p>
-        <p class="clave-text" id="rClaveAutorizacion">1108202601179212345600110010020000000011234567817</p>
-        <p><strong>FECHA Y HORA DE AUTORIZACIÓN:</strong> <span id="rFechaAutorizacion">11/08/2026 02:44</span></p>
-        <p><strong>AMBIENTE:</strong> PRUEBAS</p>
+        <p class="clave-text" id="rClaveAutorizacion">-</p>
+        <p><strong>FECHA Y HORA DE AUTORIZACIÓN:</strong> <span id="rFechaAutorizacion">-</span></p>
+        <p><strong>AMBIENTE:</strong> <span id="rAmbiente">PRUEBAS</span></p>
         <p><strong>EMISIÓN:</strong> NORMAL</p>
         <p style="margin-top: 6px;"><strong>CLAVE DE ACCESO:</strong></p>
-        <div class="barcode" id="rBarcode">1108202601179212345600110010020000000011234567817</div>
-        <p class="clave-text" id="rClaveAccesoText">1108202601179212345600110010020000000011234567817</p>
+        <div class="barcode" id="rBarcode">-</div>
+        <p class="clave-text" id="rClaveAccesoText">-</p>
       </div>
     </div>
 
     <!-- Comprador Box -->
     <div class="buyer-box">
-      <p><strong>Razón Social / Nombres y Apellidos:</strong> <span id="rClienteNombre">Dra. María Elena Torres</span></p>
-      <p><strong>Identificación:</strong> <span id="rClienteId">1712345678</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Fecha Emisión:</strong> <span id="rFechaEmision">11/08/2026</span></p>
-      <p><strong>Dirección:</strong> <span id="rClienteDir">Quito - Sector La Carolina</span></p>
+      <p><strong>Razón Social / Nombres y Apellidos:</strong> <span id="rClienteNombre">-</span></p>
+      <p><strong>Identificación:</strong> <span id="rClienteId">-</span> &nbsp;&nbsp;&nbsp;&nbsp; <strong>Fecha Emisión:</strong> <span id="rFechaEmision">-</span></p>
+      <p><strong>Dirección:</strong> <span id="rClienteDir">Ecuador</span></p>
     </div>
 
     <!-- Detalle Tabla -->
@@ -104,14 +104,7 @@
         </tr>
       </thead>
       <tbody id="rDetailsBody">
-        <tr>
-          <td>MED-001</td>
-          <td>1.00</td>
-          <td>Consulta Médica Pediatría</td>
-          <td class="num">$50.00</td>
-          <td class="num">$0.00</td>
-          <td class="num">$50.00</td>
-        </tr>
+        <tr><td colspan="6" style="text-align:center">Cargando detalles del comprobante...</td></tr>
       </tbody>
     </table>
 
@@ -120,8 +113,7 @@
       <div class="box-border">
         <strong>Información Adicional</strong>
         <div id="rInfoAdicional" style="margin-top: 6px; font-size: 0.8rem; line-height: 1.4;">
-          <p><strong>Email:</strong> paciente@ejemplo.ec</p>
-          <p><strong>Leyenda SRI:</strong> Contribuyente Régimen General</p>
+          <p><strong>Email:</strong> <span id="rClienteEmail">-</span></p>
           <p><strong>Generado por:</strong> Puntito SaaS Facturación NIIF</p>
         </div>
       </div>
@@ -129,13 +121,13 @@
       <div>
         <table class="totals-table">
           <tr><td>SUBTOTAL 15%</td><td class="num" id="rSubtotal15">$0.00</td></tr>
-          <tr><td>SUBTOTAL 0%</td><td class="num" id="rSubtotal0">$50.00</td></tr>
+          <tr><td>SUBTOTAL 0%</td><td class="num" id="rSubtotal0">$0.00</td></tr>
           <tr><td>SUBTOTAL NO OBJETO IVA</td><td class="num">$0.00</td></tr>
           <tr><td>SUBTOTAL EXENTO IVA</td><td class="num">$0.00</td></tr>
-          <tr><td>SUBTOTAL SIN IMPUESTOS</td><td class="num" id="rSubtotalSinImp">$50.00</td></tr>
+          <tr><td>SUBTOTAL SIN IMPUESTOS</td><td class="num" id="rSubtotalSinImp">$0.00</td></tr>
           <tr><td>TOTAL DESCUENTO</td><td class="num" id="rTotalDescuento">$0.00</td></tr>
           <tr><td>IVA 15%</td><td class="num" id="rTotalIva">$0.00</td></tr>
-          <tr><td><strong>VALOR TOTAL</strong></td><td class="num"><strong id="rImporteTotal">$50.00</strong></td></tr>
+          <tr><td><strong>VALOR TOTAL</strong></td><td class="num"><strong id="rImporteTotal">$0.00</strong></td></tr>
         </table>
       </div>
     </div>
@@ -156,23 +148,49 @@
         const data = await res.json();
         if (data.success && data.invoice) {
           const inv = data.invoice;
-          if (inv.emisor_razon) document.getElementById('rEmisorRazon').innerText = inv.emisor_razon;
-          if (inv.emisor_nombre_comercial) document.getElementById('rEmisorNombreCom').innerText = inv.emisor_nombre_comercial;
-          if (inv.emisor_direccion) document.getElementById('rEmisorMatriz').innerText = inv.emisor_direccion;
-          if (inv.emisor_ruc) document.getElementById('rEmisorRuc').innerText = inv.emisor_ruc;
-          if (inv.emisor_obligado) document.getElementById('rEmisorContabilidad').innerText = inv.emisor_obligado;
-          if (inv.emisor_regimen) document.getElementById('rEmisorRegimen').innerText = inv.emisor_regimen;
+          const payload = inv.payload_enviado_json || {};
+          const emisor = payload.emisor || {};
+          const totales = payload.comprobante?.totales || {};
 
-          document.getElementById('rSecuencial').innerText = inv.secuencial;
+          // Emisor dinámico
+          document.getElementById('rEmisorRazon').innerText = emisor.razonSocial || inv.emisor_razon || 'EMPRESA EMISORA';
+          document.getElementById('rEmisorNombreCom').innerText = emisor.nombreComercial || inv.emisor_nombre_comercial || emisor.razonSocial || '-';
+          document.getElementById('rEmisorMatriz').innerText = emisor.direccionMatriz || inv.emisor_direccion || 'Ecuador';
+          document.getElementById('rEmisorRuc').innerText = emisor.ruc || inv.emisor_ruc || '-';
+          document.getElementById('rEmisorContabilidad').innerText = emisor.obligadoContabilidad || inv.emisor_obligado || 'NO';
+          document.getElementById('rEmisorRegimen').innerText = emisor.regimen || inv.emisor_regimen || 'Régimen General';
+          document.getElementById('rEmisorEstab').innerText = `${emisor.establecimiento || '001'}-${emisor.puntoEmision || '001'}`;
+
+          // Documento & SRI Info
+          const numFull = `${emisor.establecimiento || '001'}-${emisor.puntoEmision || '001'}-${inv.secuencial}`;
+          document.getElementById('rSecuencial').innerText = numFull;
           document.getElementById('rClaveAutorizacion').innerText = inv.clave_acceso;
           document.getElementById('rBarcode').innerText = inv.clave_acceso;
           document.getElementById('rClaveAccesoText').innerText = inv.clave_acceso;
+          document.getElementById('rFechaAutorizacion').innerText = inv.fecha_autorizacion ? new Date(inv.fecha_autorizacion).toLocaleString('es-EC') : new Date(inv.fecha_emision).toLocaleDateString('es-EC');
+
+          // Comprador dinámico
           document.getElementById('rClienteNombre').innerText = inv.comprador_nombre || 'CONSUMIDOR FINAL';
           document.getElementById('rClienteId').innerText = inv.comprador_id || '9999999999999';
-          document.getElementById('rImporteTotal').innerText = `$${Number(inv.importe_total).toFixed(2)}`;
-          document.getElementById('rSubtotalSinImp').innerText = `$${Number(inv.total_sin_impuestos || inv.importe_total).toFixed(2)}`;
-          document.getElementById('rTotalIva').innerText = `$${Number(inv.total_iva || 0).toFixed(2)}`;
+          document.getElementById('rFechaEmision').innerText = inv.fecha_emision ? new Date(inv.fecha_emision).toLocaleDateString('es-EC') : new Date().toLocaleDateString('es-EC');
+          document.getElementById('rClienteEmail').innerText = inv.comprador_email || 'cliente@ejemplo.ec';
 
+          // Totales dinámicos desde la BD o payload
+          const sub15 = Number(totales.subtotal15 !== undefined ? totales.subtotal15 : (inv.total_iva > 0 ? (inv.importe_total - inv.total_iva) : 0)).toFixed(2);
+          const sub0  = Number(totales.subtotal0 !== undefined ? totales.subtotal0 : (inv.total_iva > 0 ? 0 : inv.importe_total)).toFixed(2);
+          const subSin = Number(totales.subtotalSinImpuestos !== undefined ? totales.subtotalSinImpuestos : inv.total_sin_impuestos || inv.importe_total).toFixed(2);
+          const desc  = Number(totales.totalDescuento !== undefined ? totales.totalDescuento : inv.total_descuento || 0).toFixed(2);
+          const iva   = Number(totales.totalIva !== undefined ? totales.totalIva : inv.total_iva || 0).toFixed(2);
+          const total = Number(totales.importeTotal !== undefined ? totales.importeTotal : inv.importe_total).toFixed(2);
+
+          document.getElementById('rSubtotal15').innerText = `$${sub15}`;
+          document.getElementById('rSubtotal0').innerText = `$${sub0}`;
+          document.getElementById('rSubtotalSinImp').innerText = `$${subSin}`;
+          document.getElementById('rTotalDescuento').innerText = `$${desc}`;
+          document.getElementById('rTotalIva').innerText = `$${iva}`;
+          document.getElementById('rImporteTotal').innerText = `$${total}`;
+
+          // Detalles dinámicos
           if (inv.detalles && inv.detalles.length > 0) {
             let html = '';
             inv.detalles.forEach(d => {

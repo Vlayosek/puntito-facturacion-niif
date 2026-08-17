@@ -123,33 +123,31 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Nombre del Paciente:</label>
-                  <input type="text" id="medPatientName" value="Dra. María Elena Torres" class="input-text">
+                  <input type="text" id="medPatientName" placeholder="Ej: Dra. María Elena Torres" class="input-text">
                 </div>
                 <div class="form-group">
                   <label>Cédula / RUC:</label>
-                  <input type="text" id="medPatientId" value="1712345678" class="input-text">
+                  <input type="text" id="medPatientId" placeholder="Ej: 1712345678" class="input-text">
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
                   <label>Especialidad / Servicio:</label>
-                  <input type="text" id="medSpecialty" value="Consulta Pediatría" class="input-text">
+                  <input type="text" id="medSpecialty" placeholder="Ej: Consulta Pediatría" class="input-text">
                 </div>
                 <div class="form-group">
                   <label>Honorario ($ USD):</label>
-                  <input type="number" id="medFee" value="50.00" step="5" class="input-text">
+                  <input type="number" id="medFee" placeholder="50.00" step="5" class="input-text">
                 </div>
               </div>
               <div class="form-group">
                 <label>Forma de Pago:</label>
                 <select id="medPaymentMethod" class="input-select">
-                  <option value="EFECTIVO">Efectivo (Ingresa a Caja General)</option>
-                  <option value="TRANSFERENCIA">Transferencia / Tarjeta (Bancos)</option>
-                  <option value="CREDITO">A Crédito (Cuentas por Cobrar)</option>
+                  <option value="EFECTIVO">Efectivo</option>
                 </select>
               </div>
               <button type="submit" class="btn btn-primary btn-block">
-                Process & Emit Factura SRI (Save to PostgreSQL)
+                Emitir Factura SRI (Grabar en PostgreSQL)
               </button>
             </form>
 
@@ -159,11 +157,11 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Razón Social Comprador:</label>
-                  <input type="text" id="retailCustomerName" value="INMOBILIARIA ANDINA CIA. LTDA." class="input-text">
+                  <input type="text" id="retailCustomerName" placeholder="Ej: INMOBILIARIA ANDINA CIA. LTDA." class="input-text">
                 </div>
                 <div class="form-group">
                   <label>RUC / Cédula:</label>
-                  <input type="text" id="retailCustomerId" value="1790011223001" class="input-text">
+                  <input type="text" id="retailCustomerId" placeholder="Ej: 1790011223001" class="input-text">
                 </div>
               </div>
               <div class="cart-items-preview">

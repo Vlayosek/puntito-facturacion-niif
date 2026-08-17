@@ -210,9 +210,9 @@ function switchToTab(tabName) {
 // ============================================================================
 async function emitMedicalInvoice() {
   const regimen      = document.getElementById('tenantRegimen').value;
-  const patientName  = document.getElementById('medPatientName').value;
-  const patientId    = document.getElementById('medPatientId').value;
-  const specialty    = document.getElementById('medSpecialty').value;
+  const patientName  = document.getElementById('medPatientName').value.trim() || 'CONSUMIDOR FINAL';
+  const patientId    = document.getElementById('medPatientId').value.trim() || '9999999999999';
+  const specialty    = document.getElementById('medSpecialty').value.trim() || 'Consulta Médica General';
   const fee          = parseFloat(document.getElementById('medFee').value) || 50;
   const paymentMethod = document.getElementById('medPaymentMethod').value;
 
@@ -235,8 +235,8 @@ async function emitMedicalInvoice() {
 // ============================================================================
 async function emitRetailInvoice() {
   const regimen       = document.getElementById('tenantRegimen').value;
-  const customerName  = document.getElementById('retailCustomerName').value;
-  const customerId    = document.getElementById('retailCustomerId').value;
+  const customerName  = document.getElementById('retailCustomerName').value.trim() || 'CONSUMIDOR FINAL';
+  const customerId    = document.getElementById('retailCustomerId').value.trim() || '9999999999999';
   const paymentMethod = document.getElementById('retailPaymentMethod').value;
 
   const payload = {
