@@ -392,43 +392,56 @@ function initAccountTab() {
     btnRefreshUsers.addEventListener('click', fetchCompanyUsers);
   }
 
-  // Formulario de registro de usuario
-  const regForm = document.getElementById('formRegisterUser');
-  if (regForm && !regForm.dataset.initialized) {
-    regForm.dataset.initialized = 'true';
-    regForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const usuario  = document.getElementById('regUsuario').value.trim();
-      const nombre   = document.getElementById('regNombre').value.trim();
-      const email    = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const btn      = document.getElementById('btnRegisterUser');
+  // Formulario de registro de usuario (restringido a admin)
+  const regFormCard = document.getElementById('formRegisterUserCard');
+  if (USER && USER.usuario !== 'admin') {
+    if (regFormCard) {
+      regFormCard.innerHTML = `
+        <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--text-muted);">+ Registrar Nuevo Usuario</h3>
+        <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 12px; font-size: 0.82rem; color: #fde68a; line-height: 1.5;">
+          <strong>&#9888; Permiso restringido:</strong><br>
+          Solo el usuario administrador principal (<code>admin</code>) puede registrar nuevos usuarios para la empresa.
+        </div>
+      `;
+    }
+  } else {
+    const regForm = document.getElementById('formRegisterUser');
+    if (regForm && !regForm.dataset.initialized) {
+      regForm.dataset.initialized = 'true';
+      regForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usuario  = document.getElementById('regUsuario').value.trim();
+        const nombre   = document.getElementById('regNombre').value.trim();
+        const email    = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const btn      = document.getElementById('btnRegisterUser');
 
-      btn.disabled = true;
-      btn.innerText = 'Creando...';
+        btn.disabled = true;
+        btn.innerText = 'Creando...';
 
-      try {
-        const res = await authFetch('/api/auth/register', {
-          method: 'POST',
-          body: JSON.stringify({ usuario, nombre, email, password })
-        });
-        if (!res) return;
-        const data = await res.json();
+        try {
+          const res = await authFetch('/api/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ usuario, nombre, email, password })
+          });
+          if (!res) return;
+          const data = await res.json();
 
-        if (data.success) {
-          showRegUserMsg('Usuario "' + usuario + '" creado exitosamente.', 'success');
-          regForm.reset();
-          fetchCompanyUsers();
-        } else {
-          showRegUserMsg(data.error || 'Error al registrar usuario.', 'error');
+          if (data.success) {
+            showRegUserMsg('Usuario "' + usuario + '" creado exitosamente.', 'success');
+            regForm.reset();
+            fetchCompanyUsers();
+          } else {
+            showRegUserMsg(data.error || 'Error al registrar usuario.', 'error');
+          }
+        } catch (err) {
+          showRegUserMsg('Error de conexion: ' + err.message, 'error');
+        } finally {
+          btn.disabled = false;
+          btn.innerText = 'Crear Usuario';
         }
-      } catch (err) {
-        showRegUserMsg('Error de conexion: ' + err.message, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'Crear Usuario';
-      }
-    });
+      });
+    }
   }
 }
 

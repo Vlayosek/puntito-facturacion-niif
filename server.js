@@ -69,6 +69,13 @@ app.post('/api/auth/login', async (req, res) => {
 /** Registrar nuevo usuario (requiere estar autenticado como admin) */
 app.post('/api/auth/register', authenticate, async (req, res) => {
   try {
+    if (req.user.usuario !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Acceso denegado. Solo el usuario administrador (admin) puede registrar nuevos usuarios.'
+      });
+    }
+
     const { usuario, nombre, email, password } = req.body;
     // El nuevo usuario pertenece a la misma empresa del admin autenticado
     const result = await AuthService.createUser({
@@ -129,6 +136,13 @@ app.get('/api/admin/configuracion', authenticate, async (req, res) => {
 /** Guardar API Key de AutorizadorEC para la empresa autenticada */
 app.post('/api/admin/configuracion', authenticate, async (req, res) => {
   try {
+    if (req.user.usuario !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: 'Acceso denegado. Solo el usuario administrador (admin) puede modificar la API Key.'
+      });
+    }
+
     const { apiKey, ambiente } = req.body;
     if (!apiKey || !apiKey.trim()) {
       return res.status(400).json({ success: false, error: 'API Key requerida' });
