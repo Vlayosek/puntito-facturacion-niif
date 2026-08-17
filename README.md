@@ -45,25 +45,130 @@ Plataforma SaaS Multi-tenant modular diseñada para el mercado ecuatoriano. Comb
 ## Instalación y Uso Local
 
 ### 1. Requisitos Previos
-* Node.js (v18+)
-* PostgreSQL (v15+) ejecutándose en `localhost:5432`
+* **Node.js** (v18+) - [Descargar](https://nodejs.org)
+* **PostgreSQL** (v15+) - [Descargar](https://www.postgresql.org/download/)
+  - Debe estar ejecutándose en `localhost:5432`
+  - Usuario por defecto: `postgres` / `postgres`
 
-### 2. Instalar Dependencias
+**Verificar instalación:**
+```bash
+node --version      # Debe ser v18 o superior
+npm --version
+```
+
+### 2. Clonar/Descargar el Proyecto
+```bash
+cd tu-carpeta-de-proyectos
+# Clona o descomprime el proyecto aquí
+cd puntito-facturacion-niif
+```
+
+### 3. Instalar Dependencias Node.js
 ```bash
 npm install
 ```
 
-### 3. Inicializar la Base de Datos PostgreSQL
-Ejecuta el asistente automático para crear la base de datos `puntitodb` y poblar los esquemas y catálogos SRI:
+### 4. Configurar Variables de Entorno
+Crea o verifica el archivo `.env` en la raíz del proyecto:
+
+```env
+# PostgreSQL
+PGUSER=postgres
+PGPASSWORD=postgres
+PGHOST=localhost
+PGPORT=5432
+PGDATABASE=puntitodb
+
+# Servidor
+PORT=3000
+NODE_ENV=development
+
+# AutorizadorEC (SRI Ecuador)
+AUTORIZADOR_EC_API_KEY=tu_api_key_aqui
+AUTORIZADOR_EC_ENV=TEST
+
+# JWT Secret (para autenticación)
+JWT_SECRET=tu_secreto_super_seguro_aqui
+```
+
+### 5. Inicializar la Base de Datos PostgreSQL (IMPORTANTE - Pasos en Orden)
+
+**Paso 5a:** Crear la base de datos y esquemas
 ```bash
 node scripts/setup_postgres.js
 ```
+*Espera a que termine. Verás: "Estructura de Base de Datos PostgreSQL inicializada con éxito"*
 
-### 4. Iniciar el Servidor y Dashboard Web
+**Paso 5b:** Ejecutar migraciones (catálogos SRI + usuario admin)
+```bash
+node scripts/run_all_migrations.js
+```
+*Verás dos migraciones ejecutadas correctamente*
+
+### 6. Verificar que la Base de Datos está Poblada
+```bash
+node scripts/verify_database.js
+```
+Deberías ver:
+- ✅ 1 Cliente
+- ✅ 1 Usuario (admin)
+- ✅ 3+ Módulos
+- ✅ 13 Cuentas Contables
+- ✅ Catálogos SRI completos
+
+### 7. Iniciar el Servidor y Dashboard Web
 ```bash
 npm start
 ```
+
+**Resultado esperado:**
+```
+Server running on port 3000
+✔ Conectado a la base de datos
+```
+
 Abre tu navegador en: **`http://localhost:3000`**
+
+### 8. Credenciales de Acceso
+Use estas credenciales en la interfaz de login:
+
+| Campo | Valor |
+|-------|-------|
+| **Usuario** | `admin` |
+| **Contraseña** | `Admin2026!` |
+| **Empresa** | TIENDA DEMO S.A. (RUC: 0190123456789) |
+
+---
+
+## Modo Desarrollo (con reinicio automático)
+Para desarrollo con recarga automática en cambios:
+```bash
+npm run dev
+```
+
+---
+
+## Solución de Problemas
+
+### ❌ Error: "cannot connect to PostgreSQL"
+- Verifica que PostgreSQL esté ejecutándose
+- Confirma credenciales en `.env` (usuario/contraseña)
+- En Windows: revisa el servicio PostgreSQL en Servicios
+
+### ❌ Error: "base de datos 'puntitodb' no existe"
+- Ejecuta: `node scripts/setup_postgres.js`
+
+### ❌ Error: "usuario admin no existe"
+- Ejecuta: `node scripts/run_all_migrations.js`
+
+### ❌ Error: "columna 'direccion' no existe"
+- Las migraciones no se ejecutaron
+- Ejecuta nuevamente: `node scripts/run_all_migrations.js`
+
+### ❌ Login fallido con admin/Admin2026!
+1. Verifica que el usuario existe: `node scripts/verify_database.js`
+2. Reinicia el servidor: `npm start`
+3. Limpia cookies del navegador y reinicia
 
 ---
 

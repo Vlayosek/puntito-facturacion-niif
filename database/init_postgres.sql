@@ -396,3 +396,111 @@ INSERT INTO puntito.tbm_modulo (codigo, descripcion) VALUES
 ('MED', 'Consultorio Médico'),
 ('POS', 'Punto de Venta / Tienda')
 ON CONFLICT DO NOTHING;
+
+-- ================================================================================
+-- 9. DATOS DE PRUEBA - CLIENTE Y USUARIO
+-- ================================================================================
+
+-- Cliente de prueba (Empresa SaaS)
+INSERT INTO puntito.tbm_cliente (codigo_cliente, ruc, razon_social, nombre_comercial, email, telefono, estado, user_create) VALUES
+('CLI-001', '0190123456789', 'TIENDA DEMO S.A.', 'Tienda Demo', 'info@tiendademo.com', '0212345678', true, 'SYSTEM')
+ON CONFLICT (ruc) DO NOTHING;
+
+-- Usuario de prueba
+INSERT INTO puntito.tbs_usuario (id_cliente, usuario, nombre, email, password_hash, estado, user_create)
+SELECT id_cliente, 'admin', 'Administrador', 'admin@tiendademo.com', 
+  '$2b$10$abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcd', true, 'SYSTEM'
+FROM puntito.tbm_cliente WHERE ruc = '0190123456789'
+ON CONFLICT (id_cliente, usuario) DO NOTHING;
+
+-- Asignar módulos al cliente
+INSERT INTO puntito.tbt_cliente_modulo (id_cliente, id_modulo, fecha_inicio, estado)
+SELECT c.id_cliente, m.id_modulo, CURRENT_DATE, true
+FROM puntito.tbm_cliente c
+CROSS JOIN puntito.tbm_modulo m
+WHERE c.ruc = '0190123456789'
+ON CONFLICT (id_cliente, id_modulo) DO NOTHING;
+
+-- Asignar módulos al usuario
+INSERT INTO puntito.tbs_usuario_modulo (id_usuario, id_modulo, estado)
+SELECT u.id_usuario, m.id_modulo, true
+FROM puntito.tbs_usuario u
+CROSS JOIN puntito.tbm_modulo m
+WHERE u.usuario = 'admin' AND u.id_cliente = (SELECT id_cliente FROM puntito.tbm_cliente WHERE ruc = '0190123456789')
+ON CONFLICT (id_usuario, id_modulo) DO NOTHING;
+
+-- Configuración de Facturación (Ambiente TEST)
+INSERT INTO facturacion.tbc_configuracion (id_cliente_puntito, ambiente, tipo_emision, autorizador_ec_env, estado)
+SELECT id_cliente, '1', '1', 'TEST', true
+FROM puntito.tbm_cliente WHERE ruc = '0190123456789'
+ON CONFLICT (id_cliente_puntito, ambiente) DO NOTHING;
+
+-- Emisor de prueba (Proveedor de Facturación)
+INSERT INTO facturacion.tbm_emisor (id_cliente_puntito, ruc, razon_social, nombre_comercial, direccion_matriz, regimen_sri, obligado_contabilidad, estado)
+SELECT id_cliente, '0190123456789', 'TIENDA DEMO S.A.', 'Tienda Demo', 'Calle Principal 123, Quito, Pichincha', 'REGIMEN_GENERAL', 'SI', true
+FROM puntito.tbm_cliente WHERE ruc = '0190123456789'
+ON CONFLICT (id_cliente_puntito, ruc) DO NOTHING;
+
+-- Establecimiento de prueba
+INSERT INTO facturacion.tbm_establecimiento (id_cliente_puntito, id_emisor, codigo_establecimiento, punto_emision, nombre, direccion, estado)
+SELECT c.id_cliente, e.id_emisor, '001', '001', 'Matriz', 'Calle Principal 123, Quito', true
+FROM puntito.tbm_cliente c
+JOIN facturacion.tbm_emisor e ON c.id_cliente = e.id_cliente_puntito
+WHERE c.ruc = '0190123456789'
+ON CONFLICT (id_cliente_puntito, codigo_establecimiento, punto_emision) DO NOTHING;
+
+-- ================================================================================
+-- 10. PLAN DE CUENTAS NIIF POR DEFECTO (PYMES)
+-- ================================================================================
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '1', 'ACTIVO', 'ACTIVO', 1, NULL, false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '1.1', 'ACTIVO CORRIENTE', 'ACTIVO', 2, '1', false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '1.1.01', 'CAJA', 'ACTIVO', 3, '1.1', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '1.1.02', 'BANCOS', 'ACTIVO', 3, '1.1', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '2', 'PASIVO', 'PASIVO', 1, NULL, false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '2.1', 'PASIVO CORRIENTE', 'PASIVO', 2, '2', false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '2.1.01', 'CUENTAS POR PAGAR', 'PASIVO', 3, '2.1', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '3', 'PATRIMONIO', 'PATRIMONIO', 1, NULL, false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '3.1', 'CAPITAL', 'PATRIMONIO', 2, '3', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '4', 'INGRESOS', 'INGRESO', 1, NULL, false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '4.1', 'VENTAS', 'INGRESO', 2, '4', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '5', 'GASTOS', 'GASTO', 1, NULL, false
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;
+
+INSERT INTO contabilidad.tbm_plan_cuentas (id_cliente_puntito, codigo_cuenta, nombre_cuenta, tipo_cuenta, nivel, padre_codigo, es_imputable)
+SELECT c.id_cliente, '5.1', 'COSTO DE VENTAS', 'GASTO', 2, '5', true
+FROM puntito.tbm_cliente c WHERE c.ruc = '0190123456789' ON CONFLICT (id_cliente_puntito, codigo_cuenta) DO NOTHING;

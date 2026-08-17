@@ -12,6 +12,6 @@ BEGIN
           AND column_name = 'direccion'
     ) THEN
         ALTER TABLE facturacion.tbm_cliente ADD COLUMN direccion VARCHAR(300);
-        console_notice := 'Columna direccion agregada a facturacion.tbm_cliente';
+        RAISE NOTICE 'Columna direccion agregada a facturacion.tbm_cliente';
     END IF;
 END $$;
