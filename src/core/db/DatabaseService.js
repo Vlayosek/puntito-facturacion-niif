@@ -137,7 +137,10 @@ export class DatabaseService {
   /**
    * Obtiene o crea el cliente comprador de la factura
    */
-  static async getOrCreateCustomer(idClientePuntito, customerData = {}) {
+  /**
+   * Obtiene o crea el cliente comprador de la factura
+   */
+  static async getOrCreateCustomer(idClientePuntito, customerData = {}, userCreate = 'system') {
     const client = await pool.connect();
     try {
       const allowedTypes = ['04', '05', '06', '07', '08'];
@@ -145,6 +148,7 @@ export class DatabaseService {
       const cleanId = String(customerData.identificacion || '9999999999999').trim().substring(0, 20);
       const cleanNombre = String(customerData.razonSocial || customerData.nombre || 'CONSUMIDOR FINAL').trim().substring(0, 300);
       const cleanEmail = String(customerData.email || 'cliente@ejemplo.ec').trim().substring(0, 300);
+      const cleanDireccion = String(customerData.direccion || 'Ecuador').trim().substring(0, 300);
 
       const res = await client.query(
         'SELECT id_fe_cliente FROM facturacion.tbm_cliente WHERE id_cliente_puntito = $1 AND tipo_identificacion = $2 AND identificacion = $3',
@@ -152,13 +156,20 @@ export class DatabaseService {
       );
 
       if (res.rowCount > 0) {
-        return res.rows[0].id_fe_cliente;
+        const existingId = res.rows[0].id_fe_cliente;
+        await client.query(
+          `UPDATE facturacion.tbm_cliente
+           SET razon_social = $1, email = $2, direccion = $3, user_update = $4, date_update = NOW()
+           WHERE id_fe_cliente = $5`,
+          [cleanNombre, cleanEmail, cleanDireccion, userCreate, existingId]
+        );
+        return existingId;
       }
 
       const ins = await client.query(
-        `INSERT INTO facturacion.tbm_cliente (id_cliente_puntito, tipo_identificacion, identificacion, razon_social, email, telefono)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_fe_cliente`,
-        [idClientePuntito, tipoId, cleanId, cleanNombre, cleanEmail, customerData.telefono || '']
+        `INSERT INTO facturacion.tbm_cliente (id_cliente_puntito, tipo_identificacion, identificacion, razon_social, email, direccion, telefono, user_create)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id_fe_cliente`,
+        [idClientePuntito, tipoId, cleanId, cleanNombre, cleanEmail, cleanDireccion, customerData.telefono || '', userCreate]
       );
 
       return ins.rows[0].id_fe_cliente;
@@ -181,7 +192,7 @@ export class DatabaseService {
   /**
    * Guarda una transacción completa: Factura + Detalles + Impuestos + Método Pago + Asiento NIIF + Detalles Asiento
    */
-  static async saveInvoiceTransaction({ tenantIds, customerId, codDoc = '01', secuencialStr, totals, items, sriResponse, journalEntry, formaPago = 'EFECTIVO' }) {
+  static async saveInvoiceTransaction({ tenantIds, customerId, codDoc = '01', secuencialStr, totals, items, sriResponse, journalEntry, formaPago = 'EFECTIVO', userCreate = 'system' }) {
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -198,22 +209,22 @@ export class DatabaseService {
       const totIva = Number(totals.totalIva) || 0;
       const impTot = Number(totals.importeTotal) || 0;
 
-      // 1. Guardar en facturacion.tbt_documento
+      // 1. Guardar en facturacion.tbt_documento con user_create de auditoria
       const insDoc = await client.query(
         `INSERT INTO facturacion.tbt_documento (
           id_cliente_puntito, id_emisor, id_establecimiento, id_fe_cliente,
           cod_doc, fecha_emision, secuencial, codigo_numerico, clave_acceso,
           estado, total_sin_impuestos, total_descuento, total_iva, importe_total,
           payload_enviado_json, respuesta_sri_json, numero_autorizacion, fecha_autorizacion,
-          url_ride_pdf, url_xml
-        ) VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), $17, $18)
+          url_ride_pdf, url_xml, user_create
+        ) VALUES ($1, $2, $3, $4, $5, CURRENT_DATE, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), $17, $18, $19)
         RETURNING id_documento`,
         [
           tenantIds.idCliente, tenantIds.idEmisor, tenantIds.idEstablecimiento, customerId,
           codDoc, cleanSecuencial, codigoNumerico, claveAcceso,
           estadoSRI, subSinImp, totDesc, totIva, impTot,
           JSON.stringify(sriData.payloadEnviado || {}), JSON.stringify(sriResponse || {}), claveAcceso,
-          rideUrl, sriData.xmlUrl || ''
+          rideUrl, sriData.xmlUrl || '', userCreate
         ]
       );
       const idDocumento = insDoc.rows[0].id_documento;

@@ -101,7 +101,7 @@ export class AuthService {
    * @param {object} userData - { idCliente, usuario, nombre, email, password }
    * @returns {Promise<{idUsuario: number}>}
    */
-  static async createUser({ idCliente, usuario, nombre, email, password }) {
+  static async createUser({ idCliente, usuario, nombre, email, password, userCreate = 'system' }) {
     if (!usuario || !password || !nombre || !idCliente) {
       throw new Error('Campos requeridos: idCliente, usuario, nombre, password');
     }
@@ -110,10 +110,10 @@ export class AuthService {
 
     try {
       const res = await pool.query(
-        `INSERT INTO puntito.tbs_usuario (id_cliente, usuario, nombre, email, password_hash, estado)
-         VALUES ($1, $2, $3, $4, $5, TRUE)
+        `INSERT INTO puntito.tbs_usuario (id_cliente, usuario, nombre, email, password_hash, estado, user_create)
+         VALUES ($1, $2, $3, $4, $5, TRUE, $6)
          RETURNING id_usuario`,
-        [idCliente, usuario.toLowerCase().trim(), nombre.trim(), (email || '').trim(), hash]
+        [idCliente, usuario.toLowerCase().trim(), nombre.trim(), (email || '').trim(), hash, userCreate]
       );
       return { idUsuario: res.rows[0].id_usuario };
     } catch (err) {

@@ -80,7 +80,8 @@ app.post('/api/auth/register', authenticate, async (req, res) => {
     // El nuevo usuario pertenece a la misma empresa del admin autenticado
     const result = await AuthService.createUser({
       idCliente: req.user.idCliente,
-      usuario, nombre, email, password
+      usuario, nombre, email, password,
+      userCreate: req.user.usuario
     });
     res.json({ success: true, ...result, message: 'Usuario creado exitosamente' });
   } catch (error) {
@@ -227,12 +228,17 @@ app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
     // Resolver tipo de identificacion desde CatalogService (lee de BD)
     const tipoId = await CatalogService.resolveIdentificationType(comprador?.identificacion);
 
-    const customerId = await DatabaseService.getOrCreateCustomer(tenantIds.idCliente, {
-      tipoIdentificacionSRI: tipoId.code,
-      identificacion: comprador?.identificacion || '9999999999999',
-      razonSocial: comprador?.nombre || comprador?.razonSocial || 'CONSUMIDOR FINAL',
-      email: comprador?.email || 'cliente@ejemplo.ec'
-    });
+    const customerId = await DatabaseService.getOrCreateCustomer(
+      tenantIds.idCliente,
+      {
+        tipoIdentificacionSRI: tipoId.code,
+        identificacion: comprador?.identificacion || '9999999999999',
+        razonSocial: comprador?.nombre || comprador?.razonSocial || 'CONSUMIDOR FINAL',
+        email: comprador?.email || 'cliente@ejemplo.ec',
+        direccion: comprador?.direccion || 'Ecuador'
+      },
+      req.user.usuario
+    );
 
     const secuencialStr = await DatabaseService.getNextSequential(tenantIds.idCliente, tenantIds.idEstablecimiento, '01');
     const invoiceNumber = `${emisorTenant.establecimiento}-${emisorTenant.puntoEmision}-${secuencialStr}`;
@@ -251,7 +257,13 @@ app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
     const sriProvider = new AutorizadorEcProvider(activeApiKey, activeEnv);
     const payloadSRI = sriProvider.buildPayload(
       emisorTenant,
-      { tipoIdentificacionSRI: tipoId.code, identificacion: comprador.identificacion, razonSocial: comprador.nombre || comprador.razonSocial, email: comprador.email },
+      {
+        tipoIdentificacionSRI: tipoId.code,
+        identificacion: comprador.identificacion,
+        razonSocial: comprador.nombre || comprador.razonSocial,
+        email: comprador.email,
+        direccion: comprador.direccion
+      },
       totals,
       totals.items,
       secuencialStr
@@ -276,7 +288,8 @@ app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
       items: totals.items,
       sriResponse,
       journalEntry,
-      formaPago
+      formaPago,
+      userCreate: req.user.usuario
     });
 
     res.json({
