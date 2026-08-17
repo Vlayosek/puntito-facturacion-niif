@@ -21,6 +21,37 @@ export class DatabaseService {
   }
 
   /**
+   * Obtiene los datos del emisor y establecimiento de una empresa por idCliente
+   */
+  static async getTenantByClienteId(idCliente) {
+    const res = await pool.query(
+      `SELECT c.id_cliente, c.ruc, c.razon_social, c.nombre_comercial, c.email, c.telefono,
+              e.direccion_matriz, e.regimen_sri, e.obligado_contabilidad,
+              est.codigo_establecimiento, est.punto_emision
+       FROM puntito.tbm_cliente c
+       LEFT JOIN facturacion.tbm_emisor e ON c.id_cliente = e.id_cliente_puntito
+       LEFT JOIN facturacion.tbm_establecimiento est ON c.id_cliente = est.id_cliente_puntito
+       WHERE c.id_cliente = $1
+       ORDER BY e.id_emisor ASC, est.id_establecimiento ASC LIMIT 1`,
+      [idCliente]
+    );
+
+    if (res.rowCount === 0) return null;
+    const r = res.rows[0];
+    return {
+      idCliente: r.id_cliente,
+      ruc: r.ruc,
+      razonSocial: r.razon_social,
+      nombreComercial: r.nombre_comercial || r.razon_social,
+      direccionMatriz: r.direccion_matriz || 'Quito, Ecuador',
+      regimenSRI: r.regimen_sri || 'REGIMEN_GENERAL',
+      obligadoContabilidad: r.obligado_contabilidad === 'SI' || r.obligado_contabilidad === true,
+      establecimiento: r.codigo_establecimiento || '001',
+      puntoEmision: r.punto_emision || '001'
+    };
+  }
+
+  /**
    * Obtiene o crea la empresa emisora y su establecimiento en puntito y facturación
    */
   static async getOrCreateTenant(tenantData = {}) {

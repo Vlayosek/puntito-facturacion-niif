@@ -193,16 +193,25 @@ app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
     const activeApiKey = config.autorizador_ec_api_key;
     const activeEnv = config.autorizador_ec_env || 'TEST';
 
-    const emisorTenant = tenantConfig || {
-      ruc: '1792123456001',
-      razonSocial: 'EMPRESA / PROFESIONAL MULTISERVICIOS S.A.',
-      nombreComercial: 'Servicios Integrales',
-      direccionMatriz: 'Quito, Ecuador',
-      regimenSRI: SRI_REGIMES.REGIMEN_GENERAL,
-      obligadoContabilidad: true,
-      establecimiento: '001',
-      puntoEmision: '001'
-    };
+    // Cargar los datos REALES del emisor pertenecientes a la empresa del usuario autenticado (req.user.idCliente)
+    let emisorTenant = await DatabaseService.getTenantByClienteId(req.user.idCliente);
+
+    // Fallback a los datos recibidos o defaults si no existe en BD
+    if (!emisorTenant) {
+      emisorTenant = tenantConfig || {
+        ruc: '1792123456001',
+        razonSocial: 'EMPRESA / PROFESIONAL MULTISERVICIOS S.A.',
+        nombreComercial: 'Servicios Integrales',
+        direccionMatriz: 'Quito, Ecuador',
+        regimenSRI: SRI_REGIMES.REGIMEN_GENERAL,
+        obligadoContabilidad: true,
+        establecimiento: '001',
+        puntoEmision: '001'
+      };
+    } else if (tenantConfig && tenantConfig.regimenSRI) {
+      // Si el usuario selecciono un Regimen SRI especifico en la UI, aplicarlo
+      emisorTenant.regimenSRI = tenantConfig.regimenSRI;
+    }
 
     const tenantIds = await DatabaseService.getOrCreateTenant(emisorTenant);
 

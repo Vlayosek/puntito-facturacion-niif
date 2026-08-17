@@ -217,16 +217,7 @@ async function emitMedicalInvoice() {
   const paymentMethod = document.getElementById('medPaymentMethod').value;
 
   const payload = {
-    tenantConfig: {
-      ruc: '1792123456001',
-      razonSocial: 'CONSULTORIO MEDICO DR. PEREZ C.LTDA.',
-      nombreComercial: 'Centro Medico Especializado',
-      direccionMatriz: 'Av. Amazonas N24-15 y Colon, Quito',
-      regimenSRI: regimen,
-      obligadoContabilidad: true,
-      establecimiento: '001',
-      puntoEmision: '002'
-    },
+    tenantConfig: { regimenSRI: regimen },
     patient: {
       identificacion: patientId,
       nombreCompleto: patientName,
@@ -249,16 +240,7 @@ async function emitRetailInvoice() {
   const paymentMethod = document.getElementById('retailPaymentMethod').value;
 
   const payload = {
-    tenantConfig: {
-      ruc: '0992876543001',
-      razonSocial: 'COMERCIAL EL SOL S.A.S.',
-      nombreComercial: 'Minimarket El Sol',
-      direccionMatriz: 'Av. 9 de Octubre 412, Guayaquil',
-      regimenSRI: regimen,
-      obligadoContabilidad: false,
-      establecimiento: '001',
-      puntoEmision: '001'
-    },
+    tenantConfig: { regimenSRI: regimen },
     customerData: { identificacion: customerId, razonSocial: customerName, email: 'compras@empresa.ec' },
     cartItems: [
       { sku: 'MON-24', nombre: 'Monitor LED 24"', cantidad: 2, precioUnitario: 120.00, aplicaIva15: true },
