@@ -1,5 +1,6 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
+import { CatalogService } from '../catalog/CatalogService.js';
 dotenv.config();
 
 const pool = new pg.Pool({
@@ -12,16 +13,11 @@ const pool = new pg.Pool({
 
 export class DatabaseService {
   /**
-   * Helper para mapear métodos de pago a códigos de catálogo SRI tbc_forma_pago
+   * Helper para mapear metodos de pago a codigos de catalogo SRI tbc_forma_pago
+   * Delega al CatalogService que lee de la BD con cache
    */
-  static mapFormaPagoSRI(formaPagoStr) {
-    if (!formaPagoStr) return '01';
-    const upper = String(formaPagoStr).toUpperCase();
-    if (upper.includes('EFECTIVO') || upper === '01') return '01';
-    if (upper.includes('DEBITO') || upper.includes('DÉBITO') || upper === '16') return '16';
-    if (upper.includes('CREDITO') || upper.includes('CRÉDITO') || upper === '19') return '19';
-    if (upper.includes('TRANSFERENCIA') || upper.includes('BANCO') || upper === '20') return '20';
-    return '20'; // Default a Transferencia con uso del sistema financiero
+  static async mapFormaPagoSRI(formaPagoStr) {
+    return CatalogService.resolveFormaPago(formaPagoStr);
   }
 
   /**
@@ -222,7 +218,7 @@ export class DatabaseService {
       }
 
       // 3. Guardar en facturacion.tbt_pago
-      const codigoFormaPago = this.mapFormaPagoSRI(formaPago);
+      const codigoFormaPago = await this.mapFormaPagoSRI(formaPago);
       await client.query(
         `INSERT INTO facturacion.tbt_pago (id_documento, forma_pago, total)
          VALUES ($1, $2, $3)`,
@@ -308,6 +304,47 @@ export class DatabaseService {
        ORDER BY d.id_documento DESC LIMIT 20`
     );
     return res.rows;
+  }
+
+  // ============================================================================
+  // CONFIGURACION POR EMPRESA (tbc_configuracion) -- Multi-tenant real
+  // ============================================================================
+
+  /**
+   * Obtiene la configuracion de AutorizadorEC de una empresa especifica
+   * @param {number} idCliente
+   * @param {string} ambiente '1'=TEST '2'=PROD
+   * @returns {Promise<{autorizador_ec_api_key, autorizador_ec_env, ambiente}|null>}
+   */
+  static async getConfiguracion(idCliente, ambiente = '1') {
+    const res = await pool.query(
+      `SELECT autorizador_ec_api_key, autorizador_ec_env, ambiente
+       FROM facturacion.tbc_configuracion
+       WHERE id_cliente_puntito = $1 AND ambiente = $2 AND estado = TRUE
+       ORDER BY id_configuracion DESC LIMIT 1`,
+      [idCliente, ambiente]
+    );
+    return res.rowCount > 0 ? res.rows[0] : null;
+  }
+
+  /**
+   * Guarda o actualiza la configuracion de AutorizadorEC de una empresa
+   * @param {number} idCliente
+   * @param {string} apiKey - API Key de AutorizadorEC
+   * @param {string} ambiente '1'=TEST '2'=PROD (default TEST)
+   */
+  static async saveConfiguracion(idCliente, apiKey, ambiente = '1') {
+    await pool.query(
+      `INSERT INTO facturacion.tbc_configuracion
+         (id_cliente_puntito, ambiente, tipo_emision, autorizador_ec_api_key, autorizador_ec_env, estado)
+       VALUES ($1, $2, '1', $3, $4, TRUE)
+       ON CONFLICT (id_cliente_puntito, ambiente)
+       DO UPDATE SET
+         autorizador_ec_api_key = EXCLUDED.autorizador_ec_api_key,
+         autorizador_ec_env = EXCLUDED.autorizador_ec_env,
+         estado = TRUE`,
+      [idCliente, ambiente, apiKey.trim(), ambiente === '2' ? 'PROD' : 'TEST']
+    );
   }
 
   static async getJournalEntries(idClientePuntito = 1) {

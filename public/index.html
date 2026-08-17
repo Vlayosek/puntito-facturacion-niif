@@ -24,19 +24,24 @@
         <span class="badge badge-sri">SRI IVA 15% / 0%</span>
         <span class="badge badge-api" id="dbStatusBadge">PostgreSQL: puntitodb</span>
         <span class="badge badge-niif">NIIF para PYMES</span>
+        <button id="btnLogout" style="background:transparent;border:1px solid var(--border-color,#30363d);color:var(--text-muted,#7d8590);border-radius:6px;padding:4px 12px;font-size:0.75rem;cursor:pointer;margin-left:8px;transition:all 0.2s" onmouseover="this.style.color='#ef4444';this.style.borderColor='#ef4444'" onmouseout="this.style.color='';this.style.borderColor=''">Cerrar Sesion</button>
       </div>
     </header>
 
-    <!-- Global API Key Config Banner -->
     <div class="card glass" style="margin-bottom: 20px; padding: 16px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
         <div>
-          <strong style="font-size: 0.9rem;">Configuración de API Key (AutorizadorEC)</strong>
-          <p style="font-size: 0.75rem; color: var(--text-muted);">Pega la clave generada en panel.autorizadorec.com/client/settings (Se guardará en <code>.env</code>)</p>
+          <strong style="font-size: 0.9rem;">Configuracion de API Key (AutorizadorEC)</strong>
+          <p style="font-size: 0.75rem; color: var(--text-muted);">Se guarda en la base de datos para tu empresa (multi-tenant). Obtener en <code>panel.autorizadorec.com</code></p>
+          <p id="apiKeyStatus" style="font-size: 0.8rem; margin-top: 6px;">Cargando estado...</p>
         </div>
-        <div style="display: flex; gap: 10px; flex: 1; max-width: 500px;">
-          <input type="password" id="inputApiKey" placeholder="Pega tu API Key de AutorizadorEC aquí" class="input-text" style="flex: 1;">
-          <button id="btnSaveApiKey" class="btn btn-outline" style="white-space: nowrap;">Guardar Clave</button>
+        <div style="display: flex; gap: 8px; flex: 1; max-width: 580px; flex-wrap: wrap;">
+          <select id="selectAmbiente" class="input-select" style="max-width: 140px; padding: 8px 10px; font-size: 0.82rem;">
+            <option value="1">TEST (Pruebas)</option>
+            <option value="2">PROD (Produccion)</option>
+          </select>
+          <input type="password" id="inputApiKey" placeholder="Pega tu API Key de AutorizadorEC" class="input-text" style="flex: 1; min-width: 220px;">
+          <button id="btnSaveApiKey" class="btn btn-outline" style="white-space: nowrap;">Guardar en DB</button>
         </div>
       </div>
     </div>

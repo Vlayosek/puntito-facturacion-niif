@@ -1,62 +1,147 @@
 /**
- * Lógica Frontend del Dashboard Interactivo Puntito SaaS SRI + NIIF + PostgreSQL
+ * Frontend principal del Dashboard Puntito SaaS SRI + NIIF + Auth JWT
  */
 
+// ============================================================================
+// AUTH — verificar token al cargar
+// ============================================================================
+const TOKEN = localStorage.getItem('puntito_token');
+const USER  = JSON.parse(localStorage.getItem('puntito_user') || 'null');
+
+if (!TOKEN) {
+  window.location.href = '/login.html';
+}
+
+/** Helper: fetch autenticado con JWT en todos los requests */
+async function authFetch(url, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (TOKEN) headers['Authorization'] = `Bearer ${TOKEN}`;
+
+  const res = await fetch(url, { ...options, headers });
+
+  // Token expirado o invalido -> redirigir al login
+  if (res.status === 401) {
+    localStorage.removeItem('puntito_token');
+    localStorage.removeItem('puntito_user');
+    window.location.href = '/login.html';
+    return null;
+  }
+  return res;
+}
+
+let lastOperationResult = null;
+
+// ============================================================================
+// INICIALIZACION
+// ============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  if (!TOKEN) return; // ya redirigido
+
+  renderUserInfo();
   initTabs();
   initModuleSwitch();
   initForms();
   initApiKeyConfig();
-  loadChartOfAccounts();
   loadConfigStatus();
+  loadChartOfAccounts();
 });
 
-let lastOperationResult = null;
+function renderUserInfo() {
+  if (!USER) return;
+  // Mostrar nombre e empresa del usuario autenticado en el header
+  const badge = document.getElementById('dbStatusBadge');
+  if (badge) {
+    badge.innerText = `${USER.empresaNombre || 'Empresa'} (${USER.usuario})`;
+    badge.className = 'badge badge-api';
+  }
 
+  // Mostrar boton de logout si existe
+  const logoutBtn = document.getElementById('btnLogout');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('puntito_token');
+      localStorage.removeItem('puntito_user');
+      window.location.href = '/login.html';
+    });
+  }
+}
+
+// ============================================================================
+// CONFIGURACION DE API KEY — ahora guarda en tbc_configuracion por empresa
+// ============================================================================
 function initApiKeyConfig() {
   const btnSave = document.getElementById('btnSaveApiKey');
   const inputKey = document.getElementById('inputApiKey');
+  const selAmbiente = document.getElementById('selectAmbiente');
+
+  // Cargar estado actual de la configuracion
+  loadApiKeyStatus();
 
   btnSave?.addEventListener('click', async () => {
-    const apiKey = inputKey.value.trim();
+    const apiKey = inputKey?.value.trim();
     if (!apiKey) {
-      alert('Por favor ingresa una API Key válida de AutorizadorEC.');
+      alert('Por favor ingresa una API Key valida de AutorizadorEC.');
       return;
     }
 
+    const ambiente = selAmbiente?.value || '1';
+
     try {
-      const res = await fetch('/api/config/api-key', {
+      const res = await authFetch('/api/admin/configuracion', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey })
+        body: JSON.stringify({ apiKey, ambiente })
       });
+      if (!res) return;
       const data = await res.json();
       if (data.success) {
-        alert('API Key de AutorizadorEC guardada exitosamente en .env');
+        alert('API Key guardada en la base de datos para tu empresa.');
+        loadApiKeyStatus();
         loadConfigStatus();
       } else {
         alert('Error guardando API Key: ' + data.error);
       }
     } catch (err) {
-      alert('Error de conexión: ' + err.message);
+      alert('Error de conexion: ' + err.message);
     }
   });
 }
 
+async function loadApiKeyStatus() {
+  try {
+    const res = await authFetch('/api/admin/configuracion');
+    if (!res) return;
+    const data = await res.json();
+
+    const statusEl = document.getElementById('apiKeyStatus');
+    if (statusEl) {
+      if (data.configured) {
+        statusEl.innerHTML = `<span style="color:#22c55e">&#10003; API Key configurada (Ambiente: ${data.env})</span>`;
+      } else {
+        statusEl.innerHTML = `<span style="color:#f59e0b">&#9888; Sin API Key &mdash; modo simulacion TEST</span>`;
+      }
+    }
+  } catch (err) {
+    console.error('Error cargando estado de API Key:', err);
+  }
+}
+
 async function loadConfigStatus() {
   try {
-    const res = await fetch('/api/config');
+    const res = await authFetch('/api/config');
+    if (!res) return;
     const data = await res.json();
     const dbBadge = document.getElementById('dbStatusBadge');
-    if (dbBadge) {
-      dbBadge.innerText = `PostgreSQL: ${data.database} (${data.apiKeyConfigured ? 'API Key Real' : 'API Key Demo'})`;
-      dbBadge.className = data.apiKeyConfigured ? 'badge badge-api' : 'badge badge-sri';
+    if (dbBadge && USER) {
+      dbBadge.innerText = `${USER.empresaNombre || 'Empresa'} | ${data.database} (${data.environment})`;
     }
   } catch (err) {
     console.error('Error cargando estado:', err);
   }
 }
 
+// ============================================================================
+// TABS
+// ============================================================================
 function initTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
@@ -64,68 +149,49 @@ function initTabs() {
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const targetTab = btn.getAttribute('data-tab');
-
       tabBtns.forEach(b => b.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
-
       btn.classList.add('active');
       const contentEl = document.getElementById(`tab-${targetTab}`);
       if (contentEl) contentEl.classList.add('active');
 
-      if (targetTab === 'ledger') {
-        fetchLedger();
-      } else if (targetTab === 'db-invoices') {
-        fetchDbInvoices();
-      }
+      if (targetTab === 'ledger') fetchLedger();
+      else if (targetTab === 'db-invoices') fetchDbInvoices();
     });
   });
 
   document.getElementById('btnRefreshInvoices')?.addEventListener('click', fetchDbInvoices);
 }
 
+// ============================================================================
+// MODULOS MEDICO / RETAIL
+// ============================================================================
 function initModuleSwitch() {
   const btnMedical = document.getElementById('btnModMedical');
-  const btnRetail = document.getElementById('btnModRetail');
+  const btnRetail  = document.getElementById('btnModRetail');
   const formMedical = document.getElementById('formMedical');
-  const formRetail = document.getElementById('formRetail');
+  const formRetail  = document.getElementById('formRetail');
 
-  btnMedical.addEventListener('click', () => {
-    btnMedical.classList.add('active');
-    btnRetail.classList.remove('active');
-    formMedical.classList.remove('hidden');
-    formRetail.classList.add('hidden');
+  btnMedical?.addEventListener('click', () => {
+    btnMedical.classList.add('active'); btnRetail.classList.remove('active');
+    formMedical.classList.remove('hidden'); formRetail.classList.add('hidden');
   });
 
-  btnRetail.addEventListener('click', () => {
-    btnRetail.classList.add('active');
-    btnMedical.classList.remove('active');
-    formRetail.classList.remove('hidden');
-    formMedical.classList.add('hidden');
+  btnRetail?.addEventListener('click', () => {
+    btnRetail.classList.add('active'); btnMedical.classList.remove('active');
+    formRetail.classList.remove('hidden'); formMedical.classList.add('hidden');
   });
 }
 
 function initForms() {
-  const formMedical = document.getElementById('formMedical');
-  const formRetail = document.getElementById('formRetail');
-
-  formMedical.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await emitMedicalInvoice();
+  document.getElementById('formMedical')?.addEventListener('submit', async (e) => {
+    e.preventDefault(); await emitMedicalInvoice();
   });
-
-  formRetail.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await emitRetailInvoice();
+  document.getElementById('formRetail')?.addEventListener('submit', async (e) => {
+    e.preventDefault(); await emitRetailInvoice();
   });
-
-  document.getElementById('btnViewSriJson')?.addEventListener('click', () => {
-    switchToTab('sri-inspector');
-  });
-
-  document.getElementById('btnViewJournalEntry')?.addEventListener('click', () => {
-    switchToTab('ledger');
-  });
-
+  document.getElementById('btnViewSriJson')?.addEventListener('click', () => switchToTab('sri-inspector'));
+  document.getElementById('btnViewJournalEntry')?.addEventListener('click', () => switchToTab('ledger'));
   document.getElementById('btnCopyJson')?.addEventListener('click', () => {
     const code = document.getElementById('jsonInspectorCode').innerText;
     navigator.clipboard.writeText(code);
@@ -134,26 +200,26 @@ function initForms() {
 }
 
 function switchToTab(tabName) {
-  const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
-  if (btn) btn.click();
+  document.querySelector(`.tab-btn[data-tab="${tabName}"]`)?.click();
 }
 
+// ============================================================================
+// EMISION MEDICA
+// ============================================================================
 async function emitMedicalInvoice() {
-  const regimen = document.getElementById('tenantRegimen').value;
-  const patientName = document.getElementById('medPatientName').value;
-  const patientId = document.getElementById('medPatientId').value;
-  const specialty = document.getElementById('medSpecialty').value;
-  const fee = parseFloat(document.getElementById('medFee').value) || 50;
+  const regimen      = document.getElementById('tenantRegimen').value;
+  const patientName  = document.getElementById('medPatientName').value;
+  const patientId    = document.getElementById('medPatientId').value;
+  const specialty    = document.getElementById('medSpecialty').value;
+  const fee          = parseFloat(document.getElementById('medFee').value) || 50;
   const paymentMethod = document.getElementById('medPaymentMethod').value;
-  const apiKey = document.getElementById('inputApiKey')?.value.trim();
 
   const payload = {
-    apiKey,
     tenantConfig: {
       ruc: '1792123456001',
       razonSocial: 'CONSULTORIO MEDICO DR. PEREZ C.LTDA.',
-      nombreComercial: 'Centro Médico Especializado',
-      direccionMatriz: 'Av. Amazonas N24-15 y Colón, Quito',
+      nombreComercial: 'Centro Medico Especializado',
+      direccionMatriz: 'Av. Amazonas N24-15 y Colon, Quito',
       regimenSRI: regimen,
       obligadoContabilidad: true,
       establecimiento: '001',
@@ -164,25 +230,23 @@ async function emitMedicalInvoice() {
       nombreCompleto: patientName,
       email: 'paciente@ejemplo.ec'
     },
-    consultationDetails: {
-      especialidad: specialty,
-      honorario: fee
-    },
+    consultationDetails: { especialidad: specialty, honorario: fee },
     paymentMethod
   };
 
   await sendInvoiceRequest('/api/modules/medical/emit-invoice', payload);
 }
 
+// ============================================================================
+// EMISION RETAIL
+// ============================================================================
 async function emitRetailInvoice() {
-  const regimen = document.getElementById('tenantRegimen').value;
-  const customerName = document.getElementById('retailCustomerName').value;
-  const customerId = document.getElementById('retailCustomerId').value;
+  const regimen       = document.getElementById('tenantRegimen').value;
+  const customerName  = document.getElementById('retailCustomerName').value;
+  const customerId    = document.getElementById('retailCustomerId').value;
   const paymentMethod = document.getElementById('retailPaymentMethod').value;
-  const apiKey = document.getElementById('inputApiKey')?.value.trim();
 
   const payload = {
-    apiKey,
     tenantConfig: {
       ruc: '0992876543001',
       razonSocial: 'COMERCIAL EL SOL S.A.S.',
@@ -193,11 +257,7 @@ async function emitRetailInvoice() {
       establecimiento: '001',
       puntoEmision: '001'
     },
-    customerData: {
-      identificacion: customerId,
-      razonSocial: customerName,
-      email: 'compras@empresa.ec'
-    },
+    customerData: { identificacion: customerId, razonSocial: customerName, email: 'compras@empresa.ec' },
     cartItems: [
       { sku: 'MON-24', nombre: 'Monitor LED 24"', cantidad: 2, precioUnitario: 120.00, aplicaIva15: true },
       { sku: 'CAB-HDMI', nombre: 'Cable HDMI Alta Velocidad', cantidad: 1, precioUnitario: 15.00, aplicaIva15: true }
@@ -208,34 +268,41 @@ async function emitRetailInvoice() {
   await sendInvoiceRequest('/api/modules/retail/emit-invoice', payload);
 }
 
+// ============================================================================
+// ENVIO DE PETICION DE EMISION (con JWT)
+// ============================================================================
 async function sendInvoiceRequest(url, payload) {
   const statusBadge = document.getElementById('statusBadge');
   statusBadge.className = 'status-pill status-sending';
   statusBadge.innerText = 'Comunicando con AutorizadorEC & PostgreSQL...';
 
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    const res = await authFetch(url, { method: 'POST', body: JSON.stringify(payload) });
+    if (!res) return;
 
     const data = await res.json();
     if (data.success) {
       lastOperationResult = data.result;
       renderResult(data.result, data.idDocumento);
     } else {
-      alert('Error en la emisión: ' + data.error);
+      // Mostrar error especifico si falta la API Key
+      const msg = data.code === 'NO_API_KEY'
+        ? 'Sin API Key configurada. Ve a la seccion de Configuracion (icono superior) y agrega tu API Key de AutorizadorEC.'
+        : 'Error en la emision: ' + data.error;
+      alert(msg);
       statusBadge.className = 'status-pill status-idle';
-      statusBadge.innerText = 'Error en emisión';
+      statusBadge.innerText = 'Error en emision';
     }
   } catch (err) {
     alert('Error al conectar con el servidor: ' + err.message);
     statusBadge.className = 'status-pill status-idle';
-    statusBadge.innerText = 'Error de conexión';
+    statusBadge.innerText = 'Error de conexion';
   }
 }
 
+// ============================================================================
+// RENDERIZAR RESULTADO
+// ============================================================================
 function renderResult(result, idDocumento) {
   const statusBadge = document.getElementById('statusBadge');
   statusBadge.className = 'status-pill status-success';
@@ -255,16 +322,19 @@ function renderResult(result, idDocumento) {
   }
 }
 
+// ============================================================================
+// HISTORIAL DE FACTURAS (JWT)
+// ============================================================================
 async function fetchDbInvoices() {
   const tbody = document.getElementById('dbInvoicesTable');
   if (!tbody) return;
-
   try {
-    const res = await fetch('/api/invoices');
+    const res = await authFetch('/api/invoices');
+    if (!res) return;
     const data = await res.json();
 
     if (!data.data || data.data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No hay facturas registradas en PostgreSQL aún. Emite una desde la primera pestaña.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="text-muted">No hay facturas registradas en PostgreSQL. Emite una desde la primera pestana.</td></tr>`;
       return;
     }
 
@@ -272,7 +342,6 @@ async function fetchDbInvoices() {
     data.data.forEach(inv => {
       const fecha = new Date(inv.fecha_emision).toLocaleDateString('es-EC');
       const localRideUrl = `/ride-viewer.html?clave=${inv.clave_acceso}`;
-
       html += `
         <tr>
           <td><code>${inv.secuencial}</code></td>
@@ -291,14 +360,18 @@ async function fetchDbInvoices() {
   }
 }
 
+// ============================================================================
+// LIBRO DIARIO (JWT)
+// ============================================================================
 async function fetchLedger() {
   const container = document.getElementById('ledgerContainer');
   try {
-    const res = await fetch('/api/accounting/ledger');
+    const res = await authFetch('/api/accounting/ledger');
+    if (!res) return;
     const data = await res.json();
 
     if (!data.data || data.data.length === 0) {
-      container.innerHTML = `<p class="text-muted">No hay asientos contables registrados en PostgreSQL aún. Realiza emisiones en el Simulador.</p>`;
+      container.innerHTML = `<p class="text-muted">No hay asientos contables registrados aun. Realiza emisiones en el Simulador.</p>`;
       return;
     }
 
@@ -314,14 +387,7 @@ async function fetchLedger() {
             <span class="tag tag-success">Partida Doble Ok (Debe = Haber)</span>
           </div>
           <table class="journal-table">
-            <thead>
-              <tr>
-                <th>Código Cuenta</th>
-                <th>Nombre de Cuenta</th>
-                <th style="text-align: right">Debe ($)</th>
-                <th style="text-align: right">Haber ($)</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Codigo Cuenta</th><th>Nombre de Cuenta</th><th style="text-align:right">Debe ($)</th><th style="text-align:right">Haber ($)</th></tr></thead>
             <tbody>
               ${entry.lines.map(line => `
                 <tr>
@@ -335,29 +401,29 @@ async function fetchLedger() {
             <tfoot>
               <tr class="journal-footer">
                 <td colspan="2">TOTALES:</td>
-                <td class="num" style="color: var(--accent-blue)">$${entry.totalDebit.toFixed(2)}</td>
-                <td class="num" style="color: var(--accent-blue)">$${entry.totalCredit.toFixed(2)}</td>
+                <td class="num" style="color:var(--accent-blue)">$${entry.totalDebit.toFixed(2)}</td>
+                <td class="num" style="color:var(--accent-blue)">$${entry.totalCredit.toFixed(2)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       `;
     });
-
     container.innerHTML = html;
   } catch (err) {
-    container.innerHTML = `<p style="color: red">Error al cargar Libro Diario: ${err.message}</p>`;
+    container.innerHTML = `<p style="color:red">Error al cargar Libro Diario: ${err.message}</p>`;
   }
 }
 
+// ============================================================================
+// PLAN DE CUENTAS (publico)
+// ============================================================================
 async function loadChartOfAccounts() {
   const tbody = document.getElementById('chartOfAccountsTable');
   if (!tbody) return;
-
   try {
     const res = await fetch('/api/accounting/chart-of-accounts');
     const data = await res.json();
-
     let html = '';
     data.data.forEach(acc => {
       const indent = '&nbsp;&nbsp;'.repeat(acc.level - 1);

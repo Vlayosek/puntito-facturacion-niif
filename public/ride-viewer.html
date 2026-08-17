@@ -148,7 +148,11 @@
       if (!clave) return;
 
       try {
-        const res = await fetch(`/api/invoices/${clave}`);
+        const token = localStorage.getItem('puntito_token');
+        if (!token) { window.location.href = '/login.html'; return; }
+        const res = await fetch(`/api/invoices/${clave}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         const data = await res.json();
         if (data.success && data.invoice) {
           const inv = data.invoice;

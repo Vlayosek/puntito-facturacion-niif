@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -11,6 +10,9 @@ import { AutorizadorEcProvider } from './src/core/sri/AutorizadorEcProvider.js';
 import { AccountingEngine } from './src/core/accounting/AccountingEngine.js';
 import { DEFAULT_CHART_OF_ACCOUNTS } from './src/core/accounting/defaultChartOfAccounts.js';
 import { DatabaseService } from './src/core/db/DatabaseService.js';
+import { CatalogService } from './src/core/catalog/CatalogService.js';
+import { AuthService } from './src/core/auth/AuthService.js';
+import { authenticate } from './src/core/auth/authMiddleware.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,62 +23,146 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ==============================================================================
+// RUTAS PUBLICAS (sin autenticacion)
+// ==============================================================================
+
+/** Estado del servidor y configuracion publica */
 app.get('/api/config', (req, res) => {
   res.json({
     success: true,
-    apiKeyConfigured: Boolean(process.env.AUTORIZADOR_EC_API_KEY && !process.env.AUTORIZADOR_EC_API_KEY.startsWith('DEMO')),
     environment: process.env.AUTORIZADOR_EC_ENV || 'TEST',
     database: process.env.PGDATABASE || 'puntitodb'
   });
 });
 
-app.post('/api/config/api-key', (req, res) => {
+/** Catalogos SRI oficiales (tipos de identificacion, tarifas IVA, formas de pago) */
+app.get('/api/catalogs', async (req, res) => {
   try {
-    const { apiKey, environment } = req.body;
-    if (!apiKey) {
-      return res.status(400).json({ success: false, error: 'API Key requerida' });
-    }
-
-    process.env.AUTORIZADOR_EC_API_KEY = apiKey.trim();
-    if (environment) process.env.AUTORIZADOR_EC_ENV = environment;
-
-    const envPath = path.join(__dirname, '.env');
-    let envContent = fs.readFileSync(envPath, 'utf-8');
-    envContent = envContent.replace(/AUTORIZADOR_EC_API_KEY=.*/g, `AUTORIZADOR_EC_API_KEY=${apiKey.trim()}`);
-    if (environment) {
-      envContent = envContent.replace(/AUTORIZADOR_EC_ENV=.*/g, `AUTORIZADOR_EC_ENV=${environment}`);
-    }
-    fs.writeFileSync(envPath, envContent, 'utf-8');
-
-    res.json({ success: true, message: 'API Key guardada exitosamente en .env y cargada en memoria.' });
+    const catalogs = await CatalogService.getAllCatalogs();
+    res.json({ success: true, data: catalogs });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
+/** Plan de cuentas NIIF por defecto */
 app.get('/api/accounting/chart-of-accounts', (req, res) => {
   res.json({ success: true, data: DEFAULT_CHART_OF_ACCOUNTS });
 });
 
-app.get('/api/accounting/ledger', async (req, res) => {
+// ==============================================================================
+// AUTENTICACION JWT
+// ==============================================================================
+
+/** Login — retorna token JWT valido por 8 horas */
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const entries = await DatabaseService.getJournalEntries(1);
+    const { usuario, password } = req.body;
+    const result = await AuthService.login(usuario, password);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(401).json({ success: false, error: error.message });
+  }
+});
+
+/** Registrar nuevo usuario (requiere estar autenticado como admin) */
+app.post('/api/auth/register', authenticate, async (req, res) => {
+  try {
+    const { usuario, nombre, email, password } = req.body;
+    // El nuevo usuario pertenece a la misma empresa del admin autenticado
+    const result = await AuthService.createUser({
+      idCliente: req.user.idCliente,
+      usuario, nombre, email, password
+    });
+    res.json({ success: true, ...result, message: 'Usuario creado exitosamente' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+/** Cambiar contrasena del usuario autenticado */
+app.post('/api/auth/change-password', authenticate, async (req, res) => {
+  try {
+    const { passwordActual, passwordNueva } = req.body;
+    await AuthService.changePassword(req.user.idUsuario, passwordActual, passwordNueva);
+    res.json({ success: true, message: 'Contrasena actualizada exitosamente' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+/** Listar usuarios de la empresa del usuario autenticado */
+app.get('/api/auth/users', authenticate, async (req, res) => {
+  try {
+    const users = await AuthService.listUsers(req.user.idCliente);
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/** Me — retorna info del usuario autenticado */
+app.get('/api/auth/me', authenticate, (req, res) => {
+  res.json({ success: true, user: req.user });
+});
+
+// ==============================================================================
+// CONFIGURACION POR EMPRESA (tbc_configuracion) -- requiere autenticacion
+// ==============================================================================
+
+/** Obtener configuracion de AutorizadorEC de la empresa autenticada */
+app.get('/api/admin/configuracion', authenticate, async (req, res) => {
+  try {
+    const config = await DatabaseService.getConfiguracion(req.user.idCliente);
+    res.json({
+      success: true,
+      configured: Boolean(config?.autorizador_ec_api_key),
+      ambiente: config?.ambiente || '1',
+      env: config?.autorizador_ec_env || 'TEST'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/** Guardar API Key de AutorizadorEC para la empresa autenticada */
+app.post('/api/admin/configuracion', authenticate, async (req, res) => {
+  try {
+    const { apiKey, ambiente } = req.body;
+    if (!apiKey || !apiKey.trim()) {
+      return res.status(400).json({ success: false, error: 'API Key requerida' });
+    }
+    await DatabaseService.saveConfiguracion(req.user.idCliente, apiKey, ambiente || '1');
+    res.json({ success: true, message: 'Configuracion de AutorizadorEC guardada para tu empresa.' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==============================================================================
+// ENDPOINTS PROTEGIDOS — requieren JWT valido
+// ==============================================================================
+
+app.get('/api/accounting/ledger', authenticate, async (req, res) => {
+  try {
+    const entries = await DatabaseService.getJournalEntries(req.user.idCliente);
     res.json({ success: true, count: entries.length, data: entries });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get('/api/invoices', async (req, res) => {
+app.get('/api/invoices', authenticate, async (req, res) => {
   try {
-    const invoices = await DatabaseService.getInvoices(1);
+    const invoices = await DatabaseService.getInvoices(req.user.idCliente);
     res.json({ success: true, count: invoices.length, data: invoices });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-app.get('/api/invoices/:claveAcceso', async (req, res) => {
+app.get('/api/invoices/:claveAcceso', authenticate, async (req, res) => {
   try {
     const invoice = await DatabaseService.getInvoiceByClave(req.params.claveAcceso);
     if (!invoice) {
@@ -89,12 +175,23 @@ app.get('/api/invoices/:claveAcceso', async (req, res) => {
 });
 
 // ==============================================================================
-// ENDPOINT UNIVERSAL DE FACTURACIÓN SRI + NIIF
+// ENDPOINT UNIVERSAL DE FACTURACION SRI + NIIF (protegido)
 // ==============================================================================
-app.post('/api/v1/invoices/emit', async (req, res) => {
+app.post('/api/v1/invoices/emit', authenticate, async (req, res) => {
   try {
-    const { tenantConfig, comprador, items, formaPago, apiKey } = req.body;
-    const activeApiKey = apiKey || process.env.AUTORIZADOR_EC_API_KEY || 'DEMO_KEY_SANDBOX';
+    const { tenantConfig, comprador, items, formaPago } = req.body;
+
+    // Obtener API Key de tbc_configuracion de la empresa autenticada
+    const config = await DatabaseService.getConfiguracion(req.user.idCliente);
+    if (!config || !config.autorizador_ec_api_key) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tu empresa no tiene API Key de AutorizadorEC configurada. Ve a Configuracion > API Key para agregarla.',
+        code: 'NO_API_KEY'
+      });
+    }
+    const activeApiKey = config.autorizador_ec_api_key;
+    const activeEnv = config.autorizador_ec_env || 'TEST';
 
     const emisorTenant = tenantConfig || {
       ruc: '1792123456001',
@@ -109,7 +206,9 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
 
     const tenantIds = await DatabaseService.getOrCreateTenant(emisorTenant);
 
-    const tipoId = TaxEngine.getSRITypeIdentification(comprador?.identificacion);
+    // Resolver tipo de identificacion desde CatalogService (lee de BD)
+    const tipoId = await CatalogService.resolveIdentificationType(comprador?.identificacion);
+
     const customerId = await DatabaseService.getOrCreateCustomer(tenantIds.idCliente, {
       tipoIdentificacionSRI: tipoId.code,
       identificacion: comprador?.identificacion || '9999999999999',
@@ -131,7 +230,7 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
 
     const totals = TaxEngine.calculateTotals(normalizedItems, emisorTenant.regimenSRI);
 
-    const sriProvider = new AutorizadorEcProvider(activeApiKey, process.env.AUTORIZADOR_EC_ENV || 'TEST');
+    const sriProvider = new AutorizadorEcProvider(activeApiKey, activeEnv);
     const payloadSRI = sriProvider.buildPayload(
       emisorTenant,
       { tipoIdentificacionSRI: tipoId.code, identificacion: comprador.identificacion, razonSocial: comprador.nombre || comprador.razonSocial, email: comprador.email },
@@ -158,63 +257,61 @@ app.post('/api/v1/invoices/emit', async (req, res) => {
       totals,
       items: totals.items,
       sriResponse,
-      journalEntry
+      journalEntry,
+      formaPago
     });
-
-    const responsePayload = {
-      module: 'SaaS_Universal',
-      invoiceNumber,
-      customer: {
-        tipoIdentificacionSRI: tipoId.code,
-        identificacion: comprador.identificacion,
-        razonSocial: comprador.nombre || comprador.razonSocial
-      },
-      totals,
-      sriResponse,
-      journalEntry
-    };
 
     res.json({
       success: true,
       idDocumento,
-      result: responsePayload
+      result: {
+        module: 'SaaS_Universal',
+        invoiceNumber,
+        customer: {
+          tipoIdentificacionSRI: tipoId.code,
+          identificacion: comprador.identificacion,
+          razonSocial: comprador.nombre || comprador.razonSocial
+        },
+        totals,
+        sriResponse,
+        journalEntry
+      }
     });
   } catch (error) {
-    console.error('Error en Endpoint Universal de Facturación:', error);
-    // AggregateError (ej: ECONNREFUSED de pg) tiene .message vacío; usar .toString() o .errors[]
+    console.error('Error en Endpoint Universal de Facturacion:', error);
     const errMsg = error.message || (error.errors && error.errors[0]?.message) || error.toString() || 'Error desconocido';
     res.status(500).json({ success: false, error: errMsg, code: error.code });
   }
 });
 
-app.post('/api/modules/medical/emit-invoice', async (req, res) => {
-  req.url = '/api/v1/invoices/emit';
+// Modulo Medico (re-route al endpoint universal)
+app.post('/api/modules/medical/emit-invoice', authenticate, async (req, res) => {
   req.body = {
     tenantConfig: req.body.tenantConfig,
     comprador: { identificacion: req.body.patient?.identificacion, nombre: req.body.patient?.nombreCompleto, email: req.body.patient?.email },
-    items: [{ codigo: 'MED-001', descripcion: `Consulta Médica: ${req.body.consultationDetails?.especialidad || 'General'}`, cantidad: 1, precioUnitario: req.body.consultationDetails?.honorario || 50, aplicaIva15: false }],
-    formaPago: req.body.paymentMethod,
-    apiKey: req.body.apiKey
+    items: [{ codigo: 'MED-001', descripcion: `Consulta Medica: ${req.body.consultationDetails?.especialidad || 'General'}`, cantidad: 1, precioUnitario: req.body.consultationDetails?.honorario || 50, aplicaIva15: false }],
+    formaPago: req.body.paymentMethod
   };
-  return app._router.handle(req, res);
+  return app._router.handle(Object.assign(req, { url: '/api/v1/invoices/emit' }), res);
 });
 
-app.post('/api/modules/retail/emit-invoice', async (req, res) => {
-  req.url = '/api/v1/invoices/emit';
+// Modulo Retail/POS (re-route al endpoint universal)
+app.post('/api/modules/retail/emit-invoice', authenticate, async (req, res) => {
   req.body = {
     tenantConfig: req.body.tenantConfig,
     comprador: { identificacion: req.body.customerData?.identificacion, nombre: req.body.customerData?.razonSocial, email: req.body.customerData?.email },
     items: req.body.cartItems,
-    formaPago: req.body.paymentMethod,
-    apiKey: req.body.apiKey
+    formaPago: req.body.paymentMethod
   };
-  return app._router.handle(req, res);
+  return app._router.handle(Object.assign(req, { url: '/api/v1/invoices/emit' }), res);
 });
 
 app.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(`Puntito SaaS Facturacion SRI + PostgreSQL Activo`);
+  console.log(`Puntito SaaS Facturacion SRI + NIIF + Auth JWT`);
   console.log(`Servidor local: http://localhost:${PORT}`);
-  console.log(`Endpoint Universal: POST http://localhost:${PORT}/api/v1/invoices/emit`);
+  console.log(`Login:          POST http://localhost:${PORT}/api/auth/login`);
+  console.log(`Catalogos SRI:  GET  http://localhost:${PORT}/api/catalogs`);
+  console.log(`Emitir factura: POST http://localhost:${PORT}/api/v1/invoices/emit`);
   console.log(`=======================================================`);
 });

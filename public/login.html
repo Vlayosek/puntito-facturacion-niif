@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puntito SaaS — Iniciar Sesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1c2433;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #7d8590;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-glow: rgba(37,99,235,0.3);
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.06) 0%, transparent 50%);
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 36px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: 700; color: white;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .brand-text h1 { font-size: 1.2rem; font-weight: 700; }
+    .brand-text p  { font-size: 0.75rem; color: var(--text-muted); }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    input::placeholder { color: var(--text-muted); }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #1d4ed8);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-login:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fca5a5;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .error-msg.show { display: block; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 24px 0;
+    }
+
+    .demo-hint {
+      background: rgba(37,99,235,0.08);
+      border: 1px solid rgba(37,99,235,0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .demo-hint strong { color: var(--text); }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo-icon">P</div>
+      <div class="brand-text">
+        <h1>Puntito SaaS</h1>
+        <p>Facturación Electrónica SRI + NIIF</p>
+      </div>
+    </div>
+
+    <h2>Iniciar Sesión</h2>
+    <p class="subtitle">Ingresa tus credenciales para acceder al sistema</p>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="inputUsuario">Usuario</label>
+        <input
+          type="text"
+          id="inputUsuario"
+          placeholder="Ej: admin"
+          autocomplete="username"
+          required
+        >
+      </div>
+      <div class="form-group">
+        <label for="inputPassword">Contraseña</label>
+        <input
+          type="password"
+          id="inputPassword"
+          placeholder="Tu contraseña"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn-login" id="btnLogin">
+        Iniciar Sesión
+      </button>
+    </form>
+
+    <hr class="divider">
+
+    <div class="demo-hint">
+      <strong>Credenciales de primer acceso:</strong><br>
+      Usuario: <strong>admin</strong> &nbsp;|&nbsp; Contraseña: <strong>Admin2026!</strong><br>
+      <small style="color:#6e7681; margin-top:4px; display:block">Cambia la contraseña desde Configuración tras el primer login.</small>
+    </div>
+  </div>
+
+  <script>
+    // Si ya hay token valido, redirigir al dashboard
+    const token = localStorage.getItem('puntito_token');
+    if (token) {
+      // Verificar que el token no ha expirado
+      fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(d => { if (d.success) window.location.href = '/'; })
+        .catch(() => localStorage.removeItem('puntito_token'));
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnLogin');
+      const errEl = document.getElementById('errorMsg');
+
+      const usuario = document.getElementById('inputUsuario').value.trim();
+      const password = document.getElementById('inputPassword').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Verificando...';
+      errEl.classList.remove('show');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          localStorage.setItem('puntito_token', data.token);
+          localStorage.setItem('puntito_user', JSON.stringify(data.user));
+          window.location.href = '/';
+        } else {
+          errEl.textContent = data.error || 'Error al iniciar sesión';
+          errEl.classList.add('show');
+          btn.disabled = false;
+          btn.innerHTML = 'Iniciar Sesión';
+        }
+      } catch (err) {
+        errEl.textContent = 'Error de conexión con el servidor';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.innerHTML = 'Iniciar Sesión';
+      }
+    });
+  </script>
+</body>
+</html>
