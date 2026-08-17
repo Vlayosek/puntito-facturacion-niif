@@ -156,6 +156,13 @@
         const data = await res.json();
         if (data.success && data.invoice) {
           const inv = data.invoice;
+          if (inv.emisor_razon) document.getElementById('rEmisorRazon').innerText = inv.emisor_razon;
+          if (inv.emisor_nombre_comercial) document.getElementById('rEmisorNombreCom').innerText = inv.emisor_nombre_comercial;
+          if (inv.emisor_direccion) document.getElementById('rEmisorMatriz').innerText = inv.emisor_direccion;
+          if (inv.emisor_ruc) document.getElementById('rEmisorRuc').innerText = inv.emisor_ruc;
+          if (inv.emisor_obligado) document.getElementById('rEmisorContabilidad').innerText = inv.emisor_obligado;
+          if (inv.emisor_regimen) document.getElementById('rEmisorRegimen').innerText = inv.emisor_regimen;
+
           document.getElementById('rSecuencial').innerText = inv.secuencial;
           document.getElementById('rClaveAutorizacion').innerText = inv.clave_acceso;
           document.getElementById('rBarcode').innerText = inv.clave_acceso;
